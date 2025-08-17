@@ -6,7 +6,7 @@ const Home = () => {
   return (
     <View style={styles.container}>
       <Image source={Logo}></Image>
-      <Text style={styles.title}>OutMind</Text>
+      <Text style={styles.title}>OutMind (develop)</Text>
       <Text style={{marginBottom: 30, marginTop: 10}}>Tu app de recordatorios favorita</Text>
     </View>
   )
