@@ -14,7 +14,7 @@ const Home = () => {
       <Text className="mb-8 mt-2.5 text-gray-600">Never forget what matters.</Text>
 
       <Link 
-        href="/about" 
+        href="/home" 
         className="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg mb-4 w-64 text-center shadow-lg"
       >
         Sign Up / Sign In
