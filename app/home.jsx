@@ -136,6 +136,15 @@ const Home = () => {
           <Ionicons name="add-circle" size={24} color="#3B82F6" />
           <Text className="text-gray-500 ml-2 font-medium">Agregar perfil</Text>
         </TouchableOpacity>
+
+        {/* Contact Us Button */}
+        <TouchableOpacity 
+          className="bg-gray-100 rounded-lg p-4 mb-4 flex-row items-center justify-center"
+          onPress={() => router.push('/contact')}
+        >
+          <Ionicons name="mail" size={24} color="#6B7280" />
+          <Text className="text-gray-600 ml-2 font-medium">Contact Us</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Bottom Navigation */}

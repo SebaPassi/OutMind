@@ -98,7 +98,6 @@ const AddTask = () => {
   const [showTypeModal, setShowTypeModal] = useState(false)
   const [showFrequencyModal, setShowFrequencyModal] = useState(false)
 
-  // Cargar perfiles desde Supabase
   const loadProfiles = async () => {
     try {
       const { data, error } = await supabase
@@ -122,20 +121,20 @@ const AddTask = () => {
     }
   }
 
-  // Cargar perfiles al montar el componente
   useEffect(() => {
     loadProfiles()
   }, [])
 
-  // Obtener el ID del perfil seleccionado
   const getSelectedProfileId = () => {
     if (profileId) return parseInt(profileId)
+    
+    // Si se selecciona "Todos", retornar null para indicar que es para todos
+    if (selectedProfile === 'Todos') return null
     
     const profile = profiles.find(p => p.name === selectedProfile)
     return profile ? profile.id : null
   }
 
-  // Guardar la tarea en Supabase
   const handleSaveTask = async () => {
     if (!taskTitle.trim()) {
       Alert.alert('Error', 'Por favor ingresa el título de la tarea')
@@ -143,7 +142,7 @@ const AddTask = () => {
     }
 
     const selectedProfileId = getSelectedProfileId()
-    if (!selectedProfileId) {
+    if (selectedProfileId === undefined) {
       Alert.alert('Error', 'Por favor selecciona un perfil')
       return
     }
@@ -151,7 +150,6 @@ const AddTask = () => {
     setLoading(true)
 
     try {
-      // 1. Crear la tarea en la tabla tasks
       const taskData = {
         name: taskTitle.trim(),
         description: taskDescription.trim() || null,
@@ -174,33 +172,65 @@ const AddTask = () => {
 
       const newTaskId = taskResult[0].id
 
-      const userTaskData = {
-        user_id: selectedProfileId,
-        task_id: newTaskId,
-        status: 'pending',
-        assigned_at: new Date().toISOString()
+      // Si se seleccionó "Todos", asignar la tarea a todos los perfiles
+      if (selectedProfileId === null) {
+        const userTaskData = profiles.map(profile => ({
+          user_id: profile.id,
+          task_id: newTaskId,
+          status: 'pending',
+          assigned_at: new Date().toISOString()
+        }))
+
+        const { error: userTaskError } = await supabase
+          .from('user_tasks')
+          .insert(userTaskData)
+
+        if (userTaskError) {
+          console.error('Error assigning task to all users:', userTaskError)
+          Alert.alert('Error', 'No se pudo asignar la tarea a todos los usuarios')
+          return
+        }
+
+        Alert.alert(
+          'Éxito',
+          `Tarea "${taskTitle}" creada y asignada a todos los perfiles`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.back(),
+            },
+          ]
+        )
+      } else {
+        // Asignar la tarea a un perfil específico
+        const userTaskData = {
+          user_id: selectedProfileId,
+          task_id: newTaskId,
+          status: 'pending',
+          assigned_at: new Date().toISOString()
+        }
+
+        const { error: userTaskError } = await supabase
+          .from('user_tasks')
+          .insert([userTaskData])
+
+        if (userTaskError) {
+          console.error('Error assigning task to user:', userTaskError)
+          Alert.alert('Error', 'No se pudo asignar la tarea al usuario')
+          return
+        }
+
+        Alert.alert(
+          'Éxito',
+          `Tarea "${taskTitle}" creada y asignada a ${selectedProfile}`,
+          [
+            {
+              text: 'OK',
+              onPress: () => router.back(),
+            },
+          ]
+        )
       }
-
-      const { error: userTaskError } = await supabase
-        .from('user_tasks')
-        .insert([userTaskData])
-
-      if (userTaskError) {
-        console.error('Error assigning task to user:', userTaskError)
-        Alert.alert('Error', 'No se pudo asignar la tarea al usuario')
-        return
-      }
-
-      Alert.alert(
-        'Éxito',
-        `Tarea "${taskTitle}" creada y asignada a ${selectedProfile}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => router.back(),
-          },
-        ]
-      )
 
     } catch (error) {
       console.error('Error saving task:', error)
@@ -376,7 +406,7 @@ const AddTask = () => {
         <OptionModal
           visible={showProfileModal}
           title="Seleccionar perfil"
-          options={profiles.map(p => p.name)}
+          options={['Todos', ...profiles.map(p => p.name)]}
           onClose={() => setShowProfileModal(false)}
           onSelect={setSelectedProfile}
         />

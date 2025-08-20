@@ -28,7 +28,7 @@ const Home = () => {
       </Link>
 
       <Link 
-        href="/about" 
+        href="/contact" 
         className="bg-gray-200 text-gray-700 font-medium py-2.5 px-6 rounded-lg border border-gray-300 w-64 text-center"
       >
         Contact Us

@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, ScrollView } from 'react-native'
+import { Text, View, TouchableOpacity, ScrollView, Alert } from 'react-native'
 import React from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -29,13 +29,20 @@ const DayTasks = () => {
 
         <ScrollView>
           {tasks.map((t) => (
-            <View key={t.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3 flex-row justify-between items-center">
+            <TouchableOpacity 
+              key={t.id} 
+              className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3 flex-row justify-between items-center"
+              onPress={() => {
+                // Para datos de ejemplo, mostrar un mensaje
+                Alert.alert('Detalle de Tarea', `Tarea: ${t.title}\nPerfil: ${t.profile}\nHora: ${t.time}`)
+              }}
+            >
               <View className="flex-1">
                 <Text className="text-black font-medium text-base">{t.title}</Text>
                 <Text className="text-gray-600 text-sm mt-1">{t.profile} • {t.time}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="gray" />
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>

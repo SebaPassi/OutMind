@@ -54,7 +54,9 @@ const Profile = () => {
       const { data, error } = await supabase
         .from('user_tasks')
         .select(`
-          *,
+          id,
+          status,
+          assigned_at,
           tasks (
             id,
             name,
@@ -74,7 +76,8 @@ const Profile = () => {
       }
 
       const transformedTasks = data.map(userTask => ({
-        id: userTask.task_id,
+        id: userTask.tasks.id,
+        userTaskId: userTask.id,
         title: userTask.tasks.name,
         description: userTask.tasks.description,
         frequency: userTask.tasks.frequency || 'Sin frecuencia',
@@ -124,7 +127,13 @@ const Profile = () => {
   }
 
   const handleTaskPress = (task) => {
-    Alert.alert('Tarea', `Editar: ${task.title}`)
+    router.push({
+      pathname: '/task-detail',
+      params: { 
+        taskId: task.id, 
+        userTaskId: task.userTaskId 
+      }
+    })
   }
 
   const handleDeleteProfile = async () => {
