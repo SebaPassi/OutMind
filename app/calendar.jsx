@@ -48,7 +48,7 @@ const Calendar = () => {
         <View className="flex-row justify-between items-center">
           <Text className="text-black font-semibold text-lg">{formatMonthYear(currentMonth)}</Text>
           <View className="flex-row items-center">
-            <TouchableOpacity className="mr-4">
+            <TouchableOpacity className="mr-4" onPress={() => router.push('/add-task')}>
               <Ionicons name="add" size={24} color="#3B82F6" />
             </TouchableOpacity>
             <TouchableOpacity onPress={handlePreviousMonth} className="mr-2">

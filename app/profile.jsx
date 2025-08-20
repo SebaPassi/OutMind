@@ -41,7 +41,7 @@ const Profile = () => {
   }
 
   const handleAddTask = () => {
-    Alert.alert('Agregar Tarea', 'Función para agregar tareas próximamente')
+    router.push({ pathname: '/add-task', params: { profileId: String(profile.id), profileName: profile.name } })
   }
 
   const handleTaskPress = (task) => {
