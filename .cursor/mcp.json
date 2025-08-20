@@ -6,7 +6,7 @@
           "-y",
           "@supabase/mcp-server-supabase@latest",
           "--read-only",
-          "--project-ref=https://kulrohozrjddjrgjsita.supabase.co"
+          "--project-ref=kulrohozrjddjrgjsita"
         ],
         "env": {
           "SUPABASE_ACCESS_TOKEN": "sbp_29909e1877bcd79b4c534b8e728606e0a8124f4f"

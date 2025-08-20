@@ -1,39 +1,119 @@
 import { Text, View, TouchableOpacity, ScrollView, Alert, Image } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router'
+import { supabase } from '../src/supabaseClient'
 import "../global.css"
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  
+  // Obtener el ID del perfil desde los parámetros de la ruta
+  const { profileId } = useLocalSearchParams()
+  const profileIdNumber = profileId ? parseInt(profileId) : null
   
   const [profile, setProfile] = useState({
-    id: 2,
-    name: 'María',
-    age: 42,
-    image: null
+    id: profileIdNumber || 0,
+    name: 'Cargando...',
+    age: 0,
+    profile_picture: null
   })
 
-  const tasks = [
-    {
-      id: 1,
-      title: 'Sacar basura',
-      frequency: 'Todos los martes',
-      type: 'recurring'
-    },
-    {
-      id: 2,
-      title: 'Oftalmólogo',
-      frequency: '16-08-2025',
-      type: 'one-time'
-    },
-    {
-      id: 3,
-      title: 'Pasear perro',
-      frequency: 'Todos los días',
-      type: 'recurring'
+  const [tasks, setTasks] = useState([])
+
+  // Cargar perfil desde Supabase
+  const loadProfile = async () => {
+    if (!profileIdNumber) {
+      console.error('No profileId provided')
+      return
     }
-  ]
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileIdNumber)
+        .single()
+
+      if (error) {
+        console.error('Error loading profile:', error)
+        return
+      }
+
+      setProfile(data)
+    } catch (error) {
+      console.error('Error loading profile:', error)
+    }
+  }
+
+  // Cargar tareas del usuario desde Supabase
+  const loadUserTasks = async () => {
+    if (!profileIdNumber) return
+
+    try {
+      setLoading(true)
+      
+      // Obtener tareas del usuario usando la tabla user_tasks
+      const { data, error } = await supabase
+        .from('user_tasks')
+        .select(`
+          *,
+          tasks (
+            id,
+            name,
+            description,
+            frequency,
+            type,
+            due_date,
+            created_at
+          )
+        `)
+        .eq('user_id', profileIdNumber)
+        .order('assigned_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading tasks:', error)
+        return
+      }
+
+      // Transformar los datos para mantener la estructura esperada
+      const transformedTasks = data.map(userTask => ({
+        id: userTask.task_id,
+        title: userTask.tasks.name,
+        description: userTask.tasks.description,
+        frequency: userTask.tasks.frequency || 'Sin frecuencia',
+        type: userTask.tasks.type || 'recurring',
+        status: userTask.status,
+        assigned_at: userTask.assigned_at,
+        due_date: userTask.tasks.due_date
+      }))
+
+      setTasks(transformedTasks)
+    } catch (error) {
+      console.error('Error loading tasks:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Recargar datos cuando se regrese a la pantalla
+  useFocusEffect(
+    React.useCallback(() => {
+      if (profileIdNumber) {
+        loadProfile()
+        loadUserTasks()
+      }
+    }, [profileIdNumber])
+  )
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    if (profileIdNumber) {
+      loadProfile()
+      loadUserTasks()
+    }
+  }, [profileIdNumber])
 
   const handleEditProfile = () => {
     setIsEditing(true)
@@ -41,14 +121,20 @@ const Profile = () => {
   }
 
   const handleAddTask = () => {
-    router.push({ pathname: '/add-task', params: { profileId: String(profile.id), profileName: profile.name } })
+    router.push({ 
+      pathname: '/add-task', 
+      params: { 
+        profileId: String(profile.id), 
+        profileName: profile.name 
+      } 
+    })
   }
 
   const handleTaskPress = (task) => {
     Alert.alert('Tarea', `Editar: ${task.title}`)
   }
 
-  const handleDeleteProfile = () => {
+  const handleDeleteProfile = async () => {
     Alert.alert(
       'Eliminar Perfil',
       `¿Estás seguro de que quieres eliminar el perfil de ${profile.name}?`,
@@ -60,9 +146,36 @@ const Profile = () => {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Perfil Eliminado', `${profile.name} ha sido eliminado de la familia`)
-            router.back()
+          onPress: async () => {
+            try {
+              // Primero eliminar las tareas asignadas al usuario
+              const { error: tasksError } = await supabase
+                .from('user_tasks')
+                .delete()
+                .eq('user_id', profile.id)
+
+              if (tasksError) {
+                console.error('Error deleting user tasks:', tasksError)
+              }
+
+              // Luego eliminar el perfil
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .delete()
+                .eq('id', profile.id)
+
+              if (profileError) {
+                console.error('Error deleting profile:', profileError)
+                Alert.alert('Error', 'No se pudo eliminar el perfil')
+                return
+              }
+
+              Alert.alert('Perfil Eliminado', `${profile.name} ha sido eliminado de la familia`)
+              router.back()
+            } catch (error) {
+              console.error('Error deleting profile:', error)
+              Alert.alert('Error', 'Ocurrió un error al eliminar el perfil')
+            }
           },
         },
       ]
@@ -84,9 +197,13 @@ const Profile = () => {
 
       {/* Profile Section */}
       <View className="items-center py-6">
-        <View className="w-24 h-24 bg-gray-300 rounded-full items-center justify-center mb-4">
-          {profile.image ? (
-            <Image source={{ uri: profile.image }} className="w-24 h-24 rounded-full" />
+        <View className="w-24 h-24 bg-gray-300 rounded-lg items-center justify-center mb-4 overflow-hidden">
+          {profile.profile_picture ? (
+            <Image 
+              source={{ uri: profile.profile_picture }} 
+              className="w-24 h-24 rounded-lg"
+              resizeMode="cover"
+            />
           ) : (
             <Ionicons name="person" size={48} color="gray" />
           )}
@@ -101,57 +218,124 @@ const Profile = () => {
           <Text className="text-black font-bold text-lg">Tareas y Recordatorios</Text>
           <TouchableOpacity 
             onPress={handleAddTask}
-            className="bg-blue-600 px-3 py-1 rounded-lg"
+            className="bg-blue-600 px-4 py-2 rounded-lg flex-row items-center"
           >
-            <Ionicons name="add" size={20} color="white" />
+            <Ionicons name="add" size={18} color="white" />
+            <Text className="text-white font-medium text-sm ml-1">Agregar</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView className="flex-1">
-          {tasks.map((task) => (
-            <TouchableOpacity
-              key={task.id}
-              onPress={() => handleTaskPress(task)}
-              className="bg-gray-100 rounded-lg p-4 mb-3 flex-row justify-between items-center"
-            >
-              <View className="flex-1">
-                <Text className="text-black font-medium text-base">{task.title}</Text>
-                <Text className="text-gray-600 text-sm mt-1">{task.frequency}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="gray" />
-            </TouchableOpacity>
-          ))}
+          {loading ? (
+            <View className="items-center py-8">
+              <View className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <Text className="text-gray-500 mt-2">Cargando tareas...</Text>
+            </View>
+          ) : tasks.length > 0 ? (
+            tasks.map((task) => (
+              <TouchableOpacity
+                key={task.id}
+                onPress={() => handleTaskPress(task)}
+                className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3 flex-row justify-between items-center"
+              >
+                <View className="flex-1">
+                  <Text className="text-black font-medium text-base">{task.title}</Text>
+                  <Text className="text-gray-600 text-sm mt-1">{task.frequency}</Text>
+                  <View className="flex-row items-center mt-2 space-x-2">
+                    <View className={`px-2 py-1 rounded-full ${task.type === 'recurring' ? 'bg-blue-100' : 'bg-green-100'}`}>
+                      <Text className={`text-xs font-medium ${task.type === 'recurring' ? 'text-blue-700' : 'text-green-700'}`}>
+                        {task.type === 'recurring' ? 'Recurrente' : 'Única'}
+                      </Text>
+                    </View>
+                    <View className={`px-2 py-1 rounded-full ${task.status === 'completed' ? 'bg-green-100' : task.status === 'overdue' ? 'bg-red-100' : 'bg-yellow-100'}`}>
+                      <Text className={`text-xs font-medium ${task.status === 'completed' ? 'text-green-700' : task.status === 'overdue' ? 'text-red-700' : 'text-yellow-700'}`}>
+                        {task.status === 'completed' ? 'Completada' : task.status === 'overdue' ? 'Vencida' : 'Pendiente'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="gray" />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View className="items-center py-8">
+              <Ionicons name="checkmark-circle" size={48} color="gray" />
+              <Text className="text-gray-500 mt-2 text-center">No hay tareas asignadas</Text>
+              <TouchableOpacity 
+                className="mt-4 bg-blue-600 px-6 py-2 rounded-lg"
+                onPress={handleAddTask}
+              >
+                <Text className="text-white font-medium">Agregar primera tarea</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </View>
 
       {/* Action Buttons */}
-      <View className="px-4 py-6 space-y-4">
+      <View className="px-4 py-6 space-y-3">
         <TouchableOpacity
           onPress={handleEditProfile}
-          className="bg-blue-600 py-4 rounded-lg items-center shadow-sm"
+          className="bg-blue-600 py-4 rounded-lg items-center shadow-sm mb-2"
         >
-          <Text className="text-white font-semibold text-lg">Editar Perfil</Text>
+          <View className="flex-row items-center">
+            <Ionicons name="create-outline" size={20} color="white" className="mr-2" />
+            <Text className="text-white font-semibold text-lg ml-2">Editar Perfil</Text>
+          </View>
         </TouchableOpacity>
         
         <TouchableOpacity
           onPress={handleDeleteProfile}
           className="bg-red-500 py-4 rounded-lg items-center shadow-sm"
         >
-          <Text className="text-white font-semibold text-lg">Eliminar Perfil</Text>
+          <View className="flex-row items-center">
+            <Ionicons name="trash-outline" size={20} color="white" className="mr-2" />
+            <Text className="text-white font-semibold text-lg ml-2">Eliminar Perfil</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* Bottom Navigation */}
-      <View className="bg-white border-t border-gray-200 px-4 py-2">
+      <View className="bg-white border-t border-gray-200 px-6 py-3">
         <View className="flex-row justify-around items-center">
-          <TouchableOpacity className="items-center py-2" onPress={() => router.push('/home')}>
-            <Ionicons name="home" size={24} color="gray" />
+          <TouchableOpacity 
+            className="items-center py-2 px-3 rounded-lg" 
+            onPress={() => router.push('/home')}
+          >
+            <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="home" size={20} color="#6B7280" />
+            </View>
+            <Text className="text-gray-500 text-xs font-medium">Inicio</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="items-center py-2" onPress={() => router.push('/calendar')}>
-            <Ionicons name="grid" size={24} color="gray" />
+          
+          <TouchableOpacity 
+            className="items-center py-2 px-3 rounded-lg" 
+            onPress={() => router.push('/calendar')}
+          >
+            <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="calendar" size={20} color="#6B7280" />
+            </View>
+            <Text className="text-gray-500 text-xs font-medium">Calendario</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="items-center py-2" onPress={() => router.push('/camera')}>
-            <Ionicons name="camera" size={24} color="gray" />
+          
+          <TouchableOpacity 
+            className="items-center py-2 px-3 rounded-lg" 
+            onPress={() => router.push('/camera')}
+          >
+            <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="camera" size={20} color="#6B7280" />
+            </View>
+            <Text className="text-gray-500 text-xs font-medium">Cámara</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            className="items-center py-2 px-3 rounded-lg" 
+            onPress={() => router.push('/about')}
+          >
+            <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="information-circle" size={20} color="#6B7280" />
+            </View>
+            <Text className="text-gray-500 text-xs font-medium">Acerca de</Text>
           </TouchableOpacity>
         </View>
       </View>
