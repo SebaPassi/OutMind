@@ -3,12 +3,14 @@ import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import { supabase } from '../src/supabaseClient'
 import "../global.css"
 
 const AddPerson = () => {
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
   const [photo, setPhoto] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   const pickImage = async () => {
     try {
@@ -64,7 +66,7 @@ const AddPerson = () => {
     )
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Por favor ingresa el nombre')
       return
@@ -86,16 +88,44 @@ const AddPerson = () => {
       return
     }
 
-    Alert.alert(
-      'Éxito',
-      `${name} ha sido agregado a la familia`,
-      [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]
-    )
+    setIsLoading(true)
+
+    try {
+      // Insertar el nuevo perfil en la tabla profiles
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            name: name.trim(),
+            age: ageNumber,
+            profile_picture: photo,
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
+
+      if (error) {
+        console.error('Error inserting profile:', error)
+        Alert.alert('Error', 'No se pudo guardar la persona en la base de datos')
+        return
+      }
+
+      Alert.alert(
+        'Éxito',
+        `${name} ha sido agregado a la familia`,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]
+      )
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      Alert.alert('Error', 'Ocurrió un error inesperado al guardar')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -163,9 +193,17 @@ const AddPerson = () => {
         <View className="mt-8">
           <TouchableOpacity
             onPress={handleSave}
-            className="bg-blue-600 py-4 rounded-lg items-center"
+            disabled={isLoading}
+            className={`py-4 rounded-lg items-center ${isLoading ? 'bg-gray-400' : 'bg-blue-600'}`}
           >
-            <Text className="text-white font-semibold text-lg">Agregar a la Familia</Text>
+            {isLoading ? (
+              <View className="flex-row items-center">
+                <Text className="text-white font-semibold text-lg mr-2">Guardando...</Text>
+                <View className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </View>
+            ) : (
+              <Text className="text-white font-semibold text-lg">Agregar a la Familia</Text>
+            )}
           </TouchableOpacity>
         </View>
 

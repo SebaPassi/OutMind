@@ -1,16 +1,55 @@
-import { Text, View, Image, TouchableOpacity, ScrollView, TextInput } from 'react-native'
-import React from 'react'
+import { Text, View, Image, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
+import { supabase } from '../src/supabaseClient'
 import "../global.css"
 
 const Home = () => {
-  const profiles = [
-    { id: 1, name: 'Martin', age: 12, image: null },
-    { id: 2, name: 'María', age: 42, image: null },
-    { id: 3, name: 'Matias', age: 15, image: null },
-    { id: 4, name: 'Manuel', age: 45, image: null },
-  ]
+  const [profiles, setProfiles] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Cargar perfiles desde Supabase
+  const loadProfiles = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error loading profiles:', error)
+        Alert.alert('Error', 'No se pudieron cargar los perfiles')
+        return
+      }
+
+      setProfiles(data || [])
+    } catch (error) {
+      console.error('Error loading profiles:', error)
+      Alert.alert('Error', 'Ocurrió un error al cargar los perfiles')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Recargar perfiles cuando se regrese a la pantalla
+  useFocusEffect(
+    React.useCallback(() => {
+      loadProfiles()
+    }, [])
+  )
+
+  // Cargar perfiles al montar el componente
+  useEffect(() => {
+    loadProfiles()
+  }, [])
+
+  // Filtrar perfiles basado en la búsqueda
+  const filteredProfiles = profiles.filter(profile =>
+    profile.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <View className="flex-1 bg-white">
@@ -31,6 +70,8 @@ const Home = () => {
           <Ionicons name="search" size={20} color="gray" />
           <TextInput 
             placeholder="Buscar..." 
+            value={searchQuery}
+            onChangeText={setSearchQuery}
             className="flex-1 ml-2 text-gray-700"
             placeholderTextColor="gray"
           />
@@ -40,27 +81,53 @@ const Home = () => {
       {/* Main Content */}
       <ScrollView className="flex-1 px-4">
         {/* User Profiles Grid */}
-        <View className="flex-row flex-wrap justify-between">
-          {profiles.map((profile) => (
-            <TouchableOpacity 
-              key={profile.id} 
-              className="w-[48%] bg-blue-100 rounded-lg p-3 mb-4"
-              onPress={() => router.push('/profile')}
-            >
-              <View className="bg-blue-200 rounded-lg p-4 mb-2 items-center justify-center">
-                {profile.image ? (
-                  <Image source={{ uri: profile.image }} className="w-16 h-16 rounded-full" />
-                ) : (
-                  <View className="w-16 h-16 bg-gray-300 rounded-full items-center justify-center">
-                    <Ionicons name="person" size={32} color="gray" />
-                  </View>
-                )}
-              </View>
-              <Text className="text-gray-600 text-sm">{profile.age} años</Text>
-              <Text className="font-bold text-gray-800">{profile.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {loading ? (
+          <View className="items-center py-8">
+            <View className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <Text className="text-gray-500 mt-2">Cargando perfiles...</Text>
+          </View>
+        ) : filteredProfiles.length > 0 ? (
+          <View className="flex-row flex-wrap justify-between">
+            {filteredProfiles.map((profile) => (
+              <TouchableOpacity 
+                key={profile.id} 
+                className="w-[48%] bg-blue-100 rounded-lg p-3 mb-4"
+                onPress={() => router.push('/profile')}
+              >
+                <View className="bg-blue-200 rounded-lg p-4 mb-2 items-center justify-center">
+                  {profile.profile_picture ? (
+                    <Image 
+                      source={{ uri: profile.profile_picture }} 
+                      className="w-full h-24 rounded-lg"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-full h-24 bg-gray-300 rounded-lg items-center justify-center">
+                      <Ionicons name="person" size={32} color="gray" />
+                    </View>
+                  )}
+                </View>
+                <Text className="text-gray-600 text-sm">{profile.age} años</Text>
+                <Text className="font-bold text-gray-800">{profile.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <View className="items-center py-8">
+            <Ionicons name="people" size={48} color="gray" />
+            <Text className="text-gray-500 mt-2 text-center">
+              {searchQuery ? 'No se encontraron perfiles que coincidan con tu búsqueda' : 'No hay perfiles agregados aún'}
+            </Text>
+            {!searchQuery && (
+              <TouchableOpacity 
+                className="mt-4 bg-blue-600 px-6 py-2 rounded-lg"
+                onPress={() => router.push('/add-person')}
+              >
+                <Text className="text-white font-medium">Agregar primer perfil</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Add Profile Button */}
         <TouchableOpacity 
