@@ -1,24 +1,57 @@
 import { Text, View, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import "../global.css"
 
 const Calendar = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2022, 8, 1)) // September 2022
-  const [selectedDate, setSelectedDate] = useState(25)
+  // Use current date by default
+  const today = useMemo(() => new Date(), [])
+  const [currentMonth, setCurrentMonth] = useState(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  )
+  const [selectedDay, setSelectedDay] = useState(today.getDate())
+  const buildDateISO = (year, monthIndex, day) => {
+    const yyyy = year
+    const mm = String(monthIndex + 1).padStart(2, '0')
+    const dd = String(day).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+  const [selectedDateISO, setSelectedDateISO] = useState(
+    buildDateISO(today.getFullYear(), today.getMonth(), today.getDate())
+  )
 
-  const daysOfWeek = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
-  const calendarDays = [
-    null, null, null, null, 1, 2, 3,
-    4, 5, 6, 7, 8, 9, 10,
-    11, 12, 13, 14, 15, 16, 17,
-    18, 19, 20, 21, 22, 23, 24,
-    25, 26, 27, 28, 29, 30, null
-  ]
+  const daysOfWeek = ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO']
+
+  const calendarDays = useMemo(() => {
+    const year = currentMonth.getFullYear()
+    const month = currentMonth.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    const leadingNulls = (firstDay.getDay() + 6) % 7
+    const arr = Array.from({ length: leadingNulls }, () => null)
+    for (let d = 1; d <= daysInMonth; d += 1) arr.push(d)
+    return arr
+  }, [currentMonth])
+
+  const allTasks = useMemo(() => {
+    const isoToday = buildDateISO(today.getFullYear(), today.getMonth(), today.getDate())
+    const tomorrow = new Date(today)
+    tomorrow.setDate(today.getDate() + 1)
+    const isoTomorrow = buildDateISO(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate())
+    return [
+      { id: 't1', title: 'Sacar basura', time: '20:00', profile: 'Todos', date: isoToday },
+      { id: 't2', title: 'Oftalmólogo', time: '16:30', profile: 'María', date: isoToday },
+      { id: 't3', title: 'Pasear perro', time: '08:30', profile: 'Tomás', date: isoTomorrow },
+    ]
+  }, [])
+  const tasksForSelectedDate = useMemo(
+    () => allTasks.filter((t) => t.date === selectedDateISO),
+    [allTasks, selectedDateISO]
+  )
 
   const formatMonthYear = (date) => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
     return `${months[date.getMonth()]} ${date.getFullYear()}`
   }
 
@@ -77,31 +110,55 @@ const Calendar = () => {
         <View className="flex-row flex-wrap">
           {calendarDays.map((day, index) => (
             <View key={index} className="w-[14.28%] aspect-square items-center justify-center">
-              {day && (
-                <TouchableOpacity
-                  onPress={() => setSelectedDate(day)}
-                  className={`w-8 h-8 rounded-full items-center justify-center ${
-                    day === selectedDate 
-                      ? 'bg-blue-500' 
-                      : day === 15 
-                        ? 'bg-gray-200' 
-                        : ''
-                  }`}
-                >
-                  <Text 
-                    className={`text-sm font-medium ${
-                      day === selectedDate 
-                        ? 'text-white' 
-                        : 'text-black'
-                    }`}
+              {day && (() => {
+                const isToday =
+                  currentMonth.getFullYear() === today.getFullYear() &&
+                  currentMonth.getMonth() === today.getMonth() &&
+                  day === today.getDate()
+                const isSelected = day === selectedDay
+                const bg = isSelected ? 'bg-blue-600' : isToday ? 'bg-gray-200' : ''
+                const color = isSelected ? 'text-white' : 'text-black'
+                return (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedDay(day)
+                      setSelectedDateISO(
+                        buildDateISO(
+                          currentMonth.getFullYear(),
+                          currentMonth.getMonth(),
+                          day
+                        )
+                      )
+                    }}
+                    className={`w-8 h-8 rounded-full items-center justify-center ${bg}`}
                   >
-                    {day}
-                  </Text>
-                </TouchableOpacity>
-              )}
+                    <Text className={`text-sm font-medium ${color}`}>{day}</Text>
+                  </TouchableOpacity>
+                )
+              })()}
             </View>
           ))}
         </View>
+      </View>
+
+      {/* Tasks for selected day */}
+      <View className="px-4 pb-4">
+        <Text className="text-black font-semibold mb-3">Tareas del día</Text>
+        {tasksForSelectedDate.length === 0 ? (
+          <View className="items-center py-6 bg-gray-50 border border-gray-200 rounded-lg">
+            <Text className="text-gray-500">No hay tareas para este día</Text>
+          </View>
+        ) : (
+          tasksForSelectedDate.map((t) => (
+            <View key={t.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3 flex-row justify-between items-center">
+              <View className="flex-1">
+                <Text className="text-black font-medium">{t.title}</Text>
+                <Text className="text-gray-600 text-sm mt-1">{t.profile} • {t.time}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="gray" />
+            </View>
+          ))
+        )}
       </View>
 
       {/* Bottom Navigation */}

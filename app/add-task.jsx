@@ -174,7 +174,6 @@ const AddTask = () => {
 
       const newTaskId = taskResult[0].id
 
-      // 2. Asignar la tarea al usuario en la tabla user_tasks
       const userTaskData = {
         user_id: selectedProfileId,
         task_id: newTaskId,
@@ -211,20 +210,17 @@ const AddTask = () => {
     }
   }
 
-  // Función para parsear la fecha y hora
   const parseDate = (dateStr, timeStr) => {
     const [dd, mm, yyyy] = dateStr.split('-')
     const [hh, minutes] = timeStr.split(':')
     return new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd), parseInt(hh), parseInt(minutes)).toISOString()
   }
 
-  // Opciones para el tipo de tarea
   const taskTypeOptions = [
     { value: 'recurring', label: 'Recurrente' },
     { value: 'one-time', label: 'Única' }
   ]
 
-  // Opciones para la frecuencia
   const frequencyOptions = [
     'Todos los días',
     'Todos los lunes',
@@ -412,13 +408,10 @@ const AddTask = () => {
           const newType = option ? option.value : 'recurring'
           setTaskType(newType)
           
-          // Ajustar valores por defecto según el tipo
           if (newType === 'one-time') {
-            // Para tareas únicas, establecer fecha y hora por defecto
             setSelectedDate(dateOptions[1] || '')
             setSelectedTime('18:00')
           } else {
-            // Para tareas recurrentes, establecer frecuencia por defecto
             setTaskFrequency('Todos los días')
           }
         }}

@@ -9,7 +9,6 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   
-  // Obtener el ID del perfil desde los parámetros de la ruta
   const { profileId } = useLocalSearchParams()
   const profileIdNumber = profileId ? parseInt(profileId) : null
   
@@ -22,7 +21,6 @@ const Profile = () => {
 
   const [tasks, setTasks] = useState([])
 
-  // Cargar perfil desde Supabase
   const loadProfile = async () => {
     if (!profileIdNumber) {
       console.error('No profileId provided')
@@ -47,14 +45,12 @@ const Profile = () => {
     }
   }
 
-  // Cargar tareas del usuario desde Supabase
   const loadUserTasks = async () => {
     if (!profileIdNumber) return
 
     try {
       setLoading(true)
       
-      // Obtener tareas del usuario usando la tabla user_tasks
       const { data, error } = await supabase
         .from('user_tasks')
         .select(`
@@ -77,7 +73,6 @@ const Profile = () => {
         return
       }
 
-      // Transformar los datos para mantener la estructura esperada
       const transformedTasks = data.map(userTask => ({
         id: userTask.task_id,
         title: userTask.tasks.name,
@@ -97,7 +92,6 @@ const Profile = () => {
     }
   }
 
-  // Recargar datos cuando se regrese a la pantalla
   useFocusEffect(
     React.useCallback(() => {
       if (profileIdNumber) {
@@ -107,7 +101,6 @@ const Profile = () => {
     }, [profileIdNumber])
   )
 
-  // Cargar datos al montar el componente
   useEffect(() => {
     if (profileIdNumber) {
       loadProfile()
@@ -148,7 +141,6 @@ const Profile = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Primero eliminar las tareas asignadas al usuario
               const { error: tasksError } = await supabase
                 .from('user_tasks')
                 .delete()
@@ -158,7 +150,6 @@ const Profile = () => {
                 console.error('Error deleting user tasks:', tasksError)
               }
 
-              // Luego eliminar el perfil
               const { error: profileError } = await supabase
                 .from('profiles')
                 .delete()

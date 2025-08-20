@@ -91,7 +91,6 @@ const AddPerson = () => {
     setIsLoading(true)
 
     try {
-      // Insertar el nuevo perfil en la tabla profiles
       const { data, error } = await supabase
         .from('profiles')
         .insert([

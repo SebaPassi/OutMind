@@ -10,7 +10,6 @@ const Home = () => {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Cargar perfiles desde Supabase
   const loadProfiles = async () => {
     try {
       setLoading(true)
@@ -34,19 +33,16 @@ const Home = () => {
     }
   }
 
-  // Recargar perfiles cuando se regrese a la pantalla
   useFocusEffect(
     React.useCallback(() => {
       loadProfiles()
     }, [])
   )
 
-  // Cargar perfiles al montar el componente
   useEffect(() => {
     loadProfiles()
   }, [])
 
-  // Filtrar perfiles basado en la búsqueda
   const filteredProfiles = profiles.filter(profile =>
     profile.name?.toLowerCase().includes(searchQuery.toLowerCase())
   )
