@@ -71,16 +71,43 @@ const CameraView = () => {
       </View>
 
       {/* Bottom Navigation */}
-      <View className="bg-white border-t border-gray-200 px-4 py-2">
+      <View className="bg-white border-t border-gray-200 px-6 py-3">
         <View className="flex-row justify-around items-center">
-          <TouchableOpacity className="items-center py-2" onPress={() => router.push('/home')}>
-            <Ionicons name="home" size={24} color="gray" />
+          <TouchableOpacity 
+            className="items-center py-2 px-3 rounded-lg" 
+            onPress={() => router.push('/home')}
+          >
+            <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="home" size={20} color="#6B7280" />
+            </View>
+            <Text className="text-gray-500 text-xs font-medium">Inicio</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="items-center py-2" onPress={() => router.push('/calendar')}>
-            <Ionicons name="grid" size={24} color="gray" />
+          
+          <TouchableOpacity 
+            className="items-center py-2 px-3 rounded-lg" 
+            onPress={() => router.push('/calendar')}
+          >
+            <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="calendar" size={20} color="#6B7280" />
+            </View>
+            <Text className="text-gray-500 text-xs font-medium">Calendario</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="items-center py-2">
-            <Ionicons name="camera" size={24} color="#3B82F6" />
+          
+          <TouchableOpacity className="items-center py-2 px-3 rounded-lg">
+            <View className="w-8 h-8 bg-blue-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="camera" size={20} color="#3B82F6" />
+            </View>
+            <Text className="text-blue-600 text-xs font-medium">Cámara</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            className="items-center py-2 px-3 rounded-lg" 
+            onPress={() => router.push('/about')}
+          >
+            <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
+              <Ionicons name="information-circle" size={20} color="#6B7280" />
+            </View>
+            <Text className="text-gray-500 text-xs font-medium">Acerca de</Text>
           </TouchableOpacity>
         </View>
       </View>
