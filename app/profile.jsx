@@ -113,7 +113,10 @@ const Profile = () => {
 
   const handleEditProfile = () => {
     setIsEditing(true)
-    router.push('/edit-profile')
+    router.push({ 
+      pathname: '/edit-profile', 
+      params: { profileId: String(profile.id) } 
+    })
   }
 
   const handleAddTask = () => {
@@ -189,9 +192,9 @@ const Profile = () => {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="black" />
         </TouchableOpacity>
-        <Text className="text-black font-bold text-lg">OutMind</Text>
+        <Text className="text-black font-bold text-lg">Perfil</Text>
         <TouchableOpacity onPress={handleEditProfile}>
-          <Ionicons name="settings" size={24} color="black" />
+          <Ionicons name="settings" size={24} color="#3B82F6" />
         </TouchableOpacity>
       </View>
 
@@ -270,29 +273,6 @@ const Profile = () => {
             </View>
           )}
         </ScrollView>
-      </View>
-
-      {/* Action Buttons */}
-      <View className="px-4 py-6 space-y-3">
-        <TouchableOpacity
-          onPress={handleEditProfile}
-          className="bg-blue-600 py-4 rounded-lg items-center shadow-sm mb-2"
-        >
-          <View className="flex-row items-center">
-            <Ionicons name="create-outline" size={20} color="white" className="mr-2" />
-            <Text className="text-white font-semibold text-lg ml-2">Editar Perfil</Text>
-          </View>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          onPress={handleDeleteProfile}
-          className="bg-red-500 py-4 rounded-lg items-center shadow-sm"
-        >
-          <View className="flex-row items-center">
-            <Ionicons name="trash-outline" size={20} color="white" className="mr-2" />
-            <Text className="text-white font-semibold text-lg ml-2">Eliminar Perfil</Text>
-          </View>
-        </TouchableOpacity>
       </View>
 
       {/* Bottom Navigation */}

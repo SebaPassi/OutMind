@@ -93,15 +93,15 @@ const Home = () => {
                   params: { profileId: profile.id } 
                 })}
               >
-                <View className="bg-blue-200 rounded-lg p-4 mb-2 items-center justify-center">
+                <View className="bg-blue-200 rounded-lg mb-2 overflow-hidden">
                   {profile.profile_picture ? (
                     <Image 
                       source={{ uri: profile.profile_picture }} 
-                      className="w-full h-24 rounded-lg"
+                      className="w-full h-24"
                       resizeMode="cover"
                     />
                   ) : (
-                    <View className="w-full h-24 bg-gray-300 rounded-lg items-center justify-center">
+                    <View className="w-full h-24 bg-gray-300 items-center justify-center">
                       <Ionicons name="person" size={32} color="gray" />
                     </View>
                   )}
@@ -137,14 +137,6 @@ const Home = () => {
           <Text className="text-gray-500 ml-2 font-medium">Agregar perfil</Text>
         </TouchableOpacity>
 
-        {/* Contact Us Button */}
-        <TouchableOpacity 
-          className="bg-gray-100 rounded-lg p-4 mb-4 flex-row items-center justify-center"
-          onPress={() => router.push('/contact')}
-        >
-          <Ionicons name="mail" size={24} color="#6B7280" />
-          <Text className="text-gray-600 ml-2 font-medium">Contact Us</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       {/* Bottom Navigation */}
