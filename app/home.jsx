@@ -96,9 +96,13 @@ const Home = () => {
               >
                 <View className="bg-blue-200 rounded-lg p-4 mb-2 items-center justify-center">
                   {profile.profile_picture ? (
-                    <Image source={{ uri: profile.profile_picture }} className="w-16 h-16 rounded-full" />
+                    <Image 
+                      source={{ uri: profile.profile_picture }} 
+                      className="w-full h-24 rounded-lg"
+                      resizeMode="cover"
+                    />
                   ) : (
-                    <View className="w-16 h-16 bg-gray-300 rounded-full items-center justify-center">
+                    <View className="w-full h-24 bg-gray-300 rounded-lg items-center justify-center">
                       <Ionicons name="person" size={32} color="gray" />
                     </View>
                   )}
