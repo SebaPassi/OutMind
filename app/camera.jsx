@@ -23,8 +23,8 @@ const CameraView = () => {
           <Ionicons name="menu" size={24} color="black" />
         </TouchableOpacity>
         <Text className="text-black font-bold text-lg">OutMind</Text>
-        <View className="w-8 h-8 bg-gray-300 rounded-full">
-          {/* Profile picture placeholder */}
+        <View className="w-8 h-8 bg-gray-300 rounded-full items-center justify-center">
+          <Ionicons name="people" size={20} color="white" />
         </View>
       </View>
 

@@ -169,7 +169,7 @@ const AddPerson = () => {
               value={name}
               onChangeText={setName}
               placeholder="Ingresa el nombre"
-              className="border border-gray-300 rounded-lg px-4 py-3 text-gray-700"
+              className="border border-gray-300 rounded-lg px-4 py-3 text-gray-700 mb-4"
               placeholderTextColor="gray"
             />
           </View>
@@ -201,7 +201,7 @@ const AddPerson = () => {
                 <View className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               </View>
             ) : (
-              <Text className="text-white font-semibold text-lg">Agregar a la Familia</Text>
+              <Text className="text-white font-semibold text-lg">Agregar a la familia</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -210,7 +210,7 @@ const AddPerson = () => {
         <View className="mt-6 p-4 bg-blue-50 rounded-lg">
           <View className="flex-row items-start">
             <Ionicons name="information-circle" size={20} color="#3B82F6" />
-            <Text className="text-blue-800 text-sm ml-2 flex-1">
+            <Text className="text-blue-800 text-sm ml-2 flex-1" style={{ textAlign: 'justify' }}>
               Esta persona podrá recibir recordatorios personalizados cuando salga de casa. 
               Podrás configurar sus tareas y actividades desde el calendario.
             </Text>
