@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, TextInput, Alert } from 'react-native'
+import { Text, View, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -12,6 +12,9 @@ const EditProfile = () => {
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [nameError, setNameError] = useState('')
+  const [ageError, setAgeError] = useState('')
 
   // Cargar datos del perfil
   const loadProfile = async () => {
@@ -51,29 +54,46 @@ const EditProfile = () => {
     loadProfile()
   }, [profileIdNumber])
 
-  const handleSave = async () => {
+  const validateForm = () => {
+    let isValid = true
+    
+    // Validar nombre
     if (!name.trim()) {
-      Alert.alert('Error', 'Por favor ingresa el nombre')
-      return
+      setNameError('Por favor ingresa el nombre')
+      isValid = false
+    } else {
+      setNameError('')
     }
 
+    // Validar edad
     if (!age.trim()) {
-      Alert.alert('Error', 'Por favor ingresa la edad')
-      return
+      setAgeError('Por favor ingresa la edad')
+      isValid = false
+    } else {
+      const ageNumber = parseInt(age)
+      if (isNaN(ageNumber) || ageNumber < 0 || ageNumber > 120) {
+        setAgeError('Por favor ingresa una edad válida (0-120)')
+        isValid = false
+      } else {
+        setAgeError('')
+      }
     }
 
-    const ageNumber = parseInt(age)
-    if (isNaN(ageNumber) || ageNumber < 0 || ageNumber > 120) {
-      Alert.alert('Error', 'Por favor ingresa una edad válida')
+    return isValid
+  }
+
+  const handleSave = async () => {
+    if (!validateForm()) {
       return
     }
 
     try {
+      setSaving(true)
       const { error } = await supabase
         .from('profiles')
         .update({
           name: name.trim(),
-          age: ageNumber
+          age: parseInt(age)
         })
         .eq('id', profileIdNumber)
 
@@ -96,6 +116,8 @@ const EditProfile = () => {
     } catch (error) {
       console.error('Error updating profile:', error)
       Alert.alert('Error', 'Ocurrió un error al actualizar el perfil')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -173,82 +195,116 @@ const EditProfile = () => {
     )
   }
 
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text className="text-gray-500 mt-4 text-lg">Cargando perfil...</Text>
+      </View>
+    )
+  }
+
   return (
     <View className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row justify-between items-center px-4 py-3">
-        <TouchableOpacity onPress={handleCancel}>
-          <Text className="text-blue-600 font-medium">Cancelar</Text>
+      <View className="flex-row justify-between items-center px-4 py-4 bg-white">
+        <TouchableOpacity 
+          onPress={handleCancel}
+          className="px-3 py-2"
+        >
+          <Text className="text-blue-600 font-medium text-base">Cancelar</Text>
         </TouchableOpacity>
-        <Text className="text-black font-bold text-lg">Editar Perfil</Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text className="text-blue-600 font-medium">Guardar</Text>
+        <Text className="text-black font-bold text-xl">Editar Perfil</Text>
+        <TouchableOpacity 
+          onPress={handleSave}
+          disabled={saving}
+          className={`px-3 py-2 ${saving ? 'opacity-50' : ''}`}
+        >
+          <Text className="text-blue-600 font-medium text-base">
+            {saving ? 'Guardando...' : 'Guardar'}
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      <View className="flex-1 px-4">
-        {loading ? (
-          <View className="flex-1 items-center justify-center">
-            <View className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-            <Text className="text-gray-500 mt-2">Cargando perfil...</Text>
+      <ScrollView 
+        className="flex-1 px-4 py-4"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* Form Fields */}
+        <View className="space-y-6">
+          {/* Name Input */}
+          <View>
+            <Text className="text-gray-700 font-semibold mb-1 text-base">Nombre</Text>
+                          <TextInput
+                value={name}
+                onChangeText={(text) => {
+                  setName(text)
+                  if (nameError) setNameError('')
+                }}
+                placeholder="Ingresa el nombre"
+                className={`border rounded-xl px-4 py-3 mb-4 text-gray-700 text-base ${
+                  nameError ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
+                }`}
+                placeholderTextColor="#9CA3AF"
+                autoFocus={false}
+                autoCapitalize="words"
+                style={{ textAlignVertical: 'center' }}
+              />
+            {nameError ? (
+              <Text className="text-red-500 text-sm mt-2 ml-1">{nameError}</Text>
+            ) : null}
           </View>
-        ) : (
-          <>
-            {/* Form Fields */}
-            <View className="space-y-4">
-              {/* Name Input */}
-              <View>
-                <Text className="text-gray-700 font-medium mb-2">Nombre</Text>
-                <TextInput
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Ingresa el nombre"
-                  className="border border-gray-300 rounded-lg px-4 py-3 text-gray-700"
-                  placeholderTextColor="gray"
-                />
-              </View>
 
-              {/* Age Input */}
-              <View>
-                <Text className="text-gray-700 font-medium mb-2">Edad</Text>
-                <TextInput
-                  value={age}
-                  onChangeText={setAge}
-                  placeholder="Ingresa la edad"
-                  keyboardType="numeric"
-                  className="border border-gray-300 rounded-lg px-4 py-3 text-gray-700"
-                  placeholderTextColor="gray"
-                />
-              </View>
-            </View>
+          {/* Age Input */}
+          <View>
+            <Text className="text-gray-700 font-semibold mb-1 text-base">Edad</Text>
+                          <TextInput
+                value={age}
+                onChangeText={(text) => {
+                  setAge(text)
+                  if (ageError) setAgeError('')
+                }}
+                placeholder="Ingresa la edad"
+                keyboardType="numeric"
+                className={`border rounded-xl px-4 py-3 text-gray-700 text-base ${
+                  ageError ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
+                }`}
+                placeholderTextColor="#9CA3AF"
+                maxLength={3}
+                style={{ textAlignVertical: 'center' }}
+              />
+            {ageError ? (
+              <Text className="text-red-500 text-sm mt-2 ml-1">{ageError}</Text>
+            ) : null}
+          </View>
+        </View>
 
-            {/* Info Section */}
-            <View className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <View className="flex-row items-start">
-                <Ionicons name="information-circle" size={20} color="#3B82F6" />
-                <Text className="text-blue-800 text-sm ml-2 flex-1">
-                  Los cambios en el perfil se reflejarán en todos los recordatorios y tareas asociadas a esta persona.
-                </Text>
-              </View>
-            </View>
+        {/* Info Section */}
+        <View className="mt-8 p-5 bg-blue-50 rounded-xl border border-blue-100">
+          <View className="flex-row items-start">
+            <Ionicons name="information-circle" size={24} color="#3B82F6" />
+            <Text className="text-blue-800 text-sm ml-3 flex-1 leading-5">
+              Los cambios en el perfil se reflejarán en todos los recordatorios y tareas asociadas a esta persona.
+            </Text>
+          </View>
+        </View>
 
-            {/* Delete Profile Section */}
-            <View className="mt-8 pt-6 border-t border-gray-200">
-              <TouchableOpacity 
-                onPress={handleDeleteProfile}
-                className="flex-row items-center justify-center py-4 px-6 bg-red-50 border border-red-200 rounded-lg"
-              >
-                <Ionicons name="trash" size={20} color="#EF4444" />
-                <Text className="text-red-600 font-medium ml-2">Eliminar perfil</Text>
-              </TouchableOpacity>
-              <Text className="text-gray-500 text-xs text-center mt-2">
-                Esta acción no se puede deshacer
-              </Text>
-            </View>
-          </>
-        )}
-      </View>
+        {/* Delete Profile Section */}
+        <View className="mt-8 pt-6 border-t border-gray-200">
+          <TouchableOpacity 
+            onPress={handleDeleteProfile}
+            className="flex-row items-center justify-center py-5 px-6 bg-red-50 border border-red-200 rounded-xl active:bg-red-100"
+          >
+            <Ionicons name="trash-outline" size={22} color="#EF4444" />
+            <Text className="text-red-600 font-semibold ml-3 text-base">Eliminar perfil</Text>
+          </TouchableOpacity>
+          <Text className="text-gray-500 text-xs text-center mt-3 px-4">
+            Esta acción no se puede deshacer
+          </Text>
+        </View>
+      </ScrollView>
     </View>
   )
 }

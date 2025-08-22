@@ -13,22 +13,22 @@ const About = () => {
           {/* Header Section */}
           <View className="items-center mb-6">
             <Image source={Logo} className="my-5 w-32 h-32 rounded-full items-center justify-center" />
-            <Text className="font-bold text-2xl text-gray-800">About OutMind</Text>
+            <Text className="font-bold text-2xl text-gray-800">Acerca de OutMind</Text>
           </View>
 
           {/* Main Description */}
           <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm border border-gray-100">
             <Text className="text-center text-base leading-6 text-gray-700 mb-4">
-              OutMind is a context-aware reminder system designed to support your memory—not distract you from it.
+              OutMind es un sistema de recordatorios inteligente diseñado para apoyar tu memoria, no distraerte de ella.
             </Text>
             <Text className="text-center text-base leading-6 text-gray-700">
-              By combining facial recognition, voice feedback, and smart scheduling, <Text className="font-bold">OutMind</Text> transforms an ordinary doorway into a seamless assistant that helps you remember what matters—right when it matters.
+              Al combinar reconocimiento facial, retroalimentación de voz y programación inteligente, <Text className="font-bold">OutMind</Text> transforma una puerta ordinaria en un asistente fluido que te ayuda a recordar lo que importa, justo cuando importa.
             </Text>
           </View>
 
           {/* Features Section */}
           <View className="w-full mb-6">
-            <Text className="font-semibold text-lg text-gray-800 mb-4 text-center">How It Works</Text>
+            <Text className="font-semibold text-lg text-gray-800 mb-4 text-center">Cómo Funciona</Text>
             
             <View className="space-y-3">
               <View className="bg-white rounded-xl p-4 flex-row items-center shadow-sm border border-gray-100 mb-4">
@@ -36,8 +36,8 @@ const About = () => {
                   <Text className="text-green-600 text-lg">👤</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="font-medium text-gray-800">Facial Recognition</Text>
-                  <Text className="text-sm text-gray-600">Identifies each person automatically</Text>
+                  <Text className="font-medium text-gray-800">Reconocimiento Facial</Text>
+                  <Text className="text-sm text-gray-600">Identifica a cada persona automáticamente</Text>
                 </View>
               </View>
 
@@ -46,8 +46,8 @@ const About = () => {
                   <Text className="text-blue-600 text-lg">🎵</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="font-medium text-gray-800">Voice Feedback</Text>
-                  <Text className="text-sm text-gray-600">Delivers tailored reminders</Text>
+                  <Text className="font-medium text-gray-800">Retroalimentación de Voz</Text>
+                  <Text className="text-sm text-gray-600">Entrega recordatorios personalizados</Text>
                 </View>
               </View>
 
@@ -56,8 +56,8 @@ const About = () => {
                   <Text className="text-purple-600 text-lg">⏰</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="font-medium text-gray-800">Smart Scheduling</Text>
-                  <Text className="text-sm text-gray-600">Right when it matters most</Text>
+                  <Text className="font-medium text-gray-800">Programación Inteligente</Text>
+                  <Text className="text-sm text-gray-600">Justo cuando más importa</Text>
                 </View>
               </View>
             </View>
@@ -65,26 +65,19 @@ const About = () => {
 
           {/* Benefits Section */}
           <View className="bg-blue-50 rounded-2xl p-6 mb-6 border border-blue-100">
-            <Text className="font-semibold text-lg text-blue-800 mb-3 text-center">Why Choose OutMind?</Text>
+            <Text className="font-semibold text-lg text-blue-800 mb-3 text-center">¿Por Qué Elegir OutMind?</Text>
             <Text className="text-center text-base leading-6 text-blue-700">
-              More than a reminder app, OutMind is a gentle companion designed to reduce cognitive load and bring peace of mind to your everyday transitions. Forgetting becomes less likely, and being present becomes easier.
+              Más que una aplicación de recordatorios, OutMind es un compañero gentil diseñado para reducir la carga cognitiva y traer tranquilidad a tus transiciones cotidianas. Olvidar se vuelve menos probable, y estar presente se vuelve más fácil.
             </Text>
           </View>
 
           {/* CTA Section */}
           <View className="w-full items-center">
             <Link 
-              href="/" 
+              href="/contact" 
               className="bg-blue-600 text-white font-semibold py-3 px-8 rounded-xl w-full text-center shadow-lg mb-3"
             >
-              Back to Home
-            </Link>
-            
-            <Link 
-              href="/contact" 
-              className="bg-white text-blue-600 font-medium py-2.5 px-8 rounded-xl border border-blue-200 w-full text-center"
-            >
-              Contact Us
+              Contáctanos
             </Link>
           </View>
         </View>

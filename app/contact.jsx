@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity, Linking, Alert } from 'react-native'
+import { Text, View, TouchableOpacity, Linking, Alert, Image } from 'react-native'
 import React from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
@@ -9,12 +9,16 @@ const Contact = () => {
     {
       name: 'Sofía Larraín',
       email: 'sofialarrainv@uc.cl',
-      role: 'Desarrolladora'
+      role: 'Desarrolladora',
+      // TODO: Reemplazar con tu URL de Cloudinary
+      imageUrl: 'https://res.cloudinary.com/tu-cloud-name/image/upload/v1/tu-folder/sofia-profile.jpg'
     },
     {
       name: 'Sebastian Passi',
       email: 'sebastian.passim@uc.cl',
-      role: 'Desarrollador'
+      role: 'Desarrollador',
+      // TODO: Reemplazar con tu URL de Cloudinary
+      imageUrl: 'https://res.cloudinary.com/davxupqlx/image/upload/v1751742822/Maleco%CC%81n_2_zwcymk.jpg'
     }
   ]
 
@@ -42,8 +46,8 @@ const Contact = () => {
       {/* Content */}
       <View className="flex-1 px-4">
         <View className="items-center mb-8">
-          <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
-            <Ionicons name="people" size={40} color="#3B82F6" />
+          <View className="mb-3">
+          <Image source={{ uri: "https://res.cloudinary.com/davxupqlx/image/upload/v1755867862/OutMind_Logo_icdv2z.png" }} className="w-20 h-20 rounded-full" defaultSource={require('../assets/icon.png')} />
           </View>
           <Text className="text-black font-bold text-xl text-center mb-2">Equipo de Desarrollo</Text>
           <Text className="text-gray-600 text-center">
@@ -56,8 +60,19 @@ const Contact = () => {
           {contacts.map((contact, index) => (
             <View key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-6">
               <View className="flex-row items-center mb-3">
-                <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center mr-4">
-                  <Ionicons name="person" size={24} color="#3B82F6" />
+                {/* Profile Image */}
+                <View className="mr-4">
+                  {contact.imageUrl ? (
+                    <Image 
+                      source={{ uri: contact.imageUrl }}
+                      className="w-12 h-12 rounded-full"
+                      defaultSource={require('../assets/icon.png')}
+                    />
+                  ) : (
+                    <View className="w-12 h-12 bg-blue-100 rounded-full items-center justify-center">
+                      <Ionicons name="person" size={24} color="#3B82F6" />
+                    </View>
+                  )}
                 </View>
                 <View className="flex-1">
                   <Text className="text-black font-semibold text-lg">{contact.name}</Text>
@@ -129,7 +144,7 @@ const Contact = () => {
             <View className="w-8 h-8 bg-gray-100 rounded-full items-center justify-center mb-1">
               <Ionicons name="information-circle" size={20} color="#6B7280" />
             </View>
-            <Text className="text-gray-500 text-xs font-medium">Acerca de</Text>
+            <Text className="text-gray-600 text-xs font-medium">Acerca de</Text>
           </TouchableOpacity>
         </View>
       </View>
