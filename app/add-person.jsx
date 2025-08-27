@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
 import { supabase } from '../src/supabaseClient'
 import { setupStorageBucket, checkStoragePermissions } from '../src/supabaseStorageSetup'
 import "../global.css"
@@ -91,21 +92,46 @@ const AddPerson = () => {
       const fileName = `profile_${timestamp}_${randomString}.jpg`
       console.log('📝 Nombre del archivo:', fileName)
       
-             // Convertir la imagen a blob
-       console.log('🔄 Convirtiendo imagen a blob...')
-       console.log('📁 URI original:', imageUri)
-       
-       const response = await fetch(imageUri)
-       console.log('📡 Response status:', response.status)
-       console.log('📡 Response headers:', response.headers)
-       
-       const blob = await response.blob()
-       console.log('✅ Blob creado, tamaño:', blob.size, 'bytes')
-       console.log('📋 Blob type:', blob.type)
-       
-       if (blob.size === 0) {
-         throw new Error('El blob está vacío (0 bytes)')
-       }
+      // Verificar si la URI es válida
+      if (!imageUri || imageUri.trim() === '') {
+        throw new Error('URI de imagen inválida')
+      }
+      
+      // Leer el archivo usando FileSystem
+      console.log('📖 Leyendo archivo con FileSystem...')
+      const fileInfo = await FileSystem.getInfoAsync(imageUri)
+      console.log('📊 Información del archivo:', fileInfo)
+      
+      if (!fileInfo.exists) {
+        throw new Error('El archivo no existe')
+      }
+      
+      console.log('📁 Tamaño del archivo:', fileInfo.size, 'bytes')
+      
+      // Leer el archivo como base64
+      console.log('🔄 Leyendo archivo como base64...')
+      const base64Data = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64
+      })
+      
+      console.log('✅ Base64 leído, longitud:', base64Data.length)
+      
+      // Convertir base64 a blob
+      console.log('🔄 Convirtiendo base64 a blob...')
+      const byteCharacters = atob(base64Data)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      const blob = new Blob([byteArray], { type: 'image/jpeg' })
+      
+      console.log('✅ Blob creado, tamaño:', blob.size, 'bytes')
+      console.log('📋 Blob type:', blob.type)
+      
+      if (blob.size === 0) {
+        throw new Error('El blob está vacío (0 bytes)')
+      }
       
       // Verificar si el bucket existe
       console.log('🔍 Verificando bucket profile_pictures...')
@@ -116,19 +142,19 @@ const AddPerson = () => {
         console.log('📦 Buckets disponibles:', buckets.map(b => b.name))
       }
       
-             // Subir a Supabase Storage
-       console.log('📤 Subiendo imagen a Supabase Storage...')
-       console.log('📦 Bucket:', 'profile_pictures')
-       console.log('📝 Nombre archivo:', fileName)
-       console.log('📊 Tamaño blob:', blob.size, 'bytes')
-       
-       const { data, error } = await supabase.storage
-         .from('profile_pictures')
-         .upload(fileName, blob, {
-           contentType: 'image/jpeg',
-           cacheControl: '3600',
-           upsert: false
-         })
+      // Subir a Supabase Storage
+      console.log('📤 Subiendo imagen a Supabase Storage...')
+      console.log('📦 Bucket:', 'profile_pictures')
+      console.log('📝 Nombre archivo:', fileName)
+      console.log('📊 Tamaño blob:', blob.size, 'bytes')
+      
+      const { data, error } = await supabase.storage
+        .from('profile_pictures')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: false
+        })
 
       if (error) {
         console.error('❌ Error uploading image:', error)
