@@ -13,6 +13,7 @@ const Home = () => {
   const loadProfiles = async () => {
     try {
       setLoading(true)
+      console.log('🔄 Cargando perfiles...')
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -24,6 +25,8 @@ const Home = () => {
         return
       }
 
+      console.log('✅ Perfiles cargados:', data?.length || 0)
+      console.log('📸 URLs de fotos:', data?.map(p => ({ id: p.id, name: p.name, photo: p.profile_picture_url })))
       setProfiles(data || [])
     } catch (error) {
       console.error('Error loading profiles:', error)
@@ -94,17 +97,24 @@ const Home = () => {
                 })}
               >
                 <View className="bg-blue-200 rounded-lg mb-2 overflow-hidden">
-                               {profile.profile_picture_url ? (
-               <Image 
-                 source={{ uri: profile.profile_picture_url }} 
-                      className="w-full h-24"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View className="w-full h-24 bg-gray-300 items-center justify-center">
-                      <Ionicons name="person" size={32} color="gray" />
-                    </View>
-                  )}
+                  {(() => {
+                    console.log(`🖼️ Renderizando perfil ${profile.name}:`, { 
+                      id: profile.id, 
+                      hasPhoto: !!profile.profile_picture_url, 
+                      photoUrl: profile.profile_picture_url 
+                    })
+                    return profile.profile_picture_url ? (
+                      <Image 
+                        source={{ uri: profile.profile_picture_url }} 
+                        className="w-full h-24"
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View className="w-full h-24 bg-gray-300 items-center justify-center">
+                        <Ionicons name="person" size={32} color="gray" />
+                      </View>
+                    )
+                  })()}
                 </View>
                 <Text className="text-gray-600 text-sm">{profile.age} años</Text>
                 <Text className="font-bold text-gray-800">{profile.name}</Text>
