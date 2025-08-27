@@ -1,8 +1,10 @@
-import { Text, View, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator } from 'react-native'
+import { Text, View, TouchableOpacity, TextInput, Alert, ScrollView, ActivityIndicator, Image } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useLocalSearchParams } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../src/supabaseClient'
+import { setupStorageBucket, checkStoragePermissions } from '../src/supabaseStorageSetup'
 import "../global.css"
 
 const EditProfile = () => {
@@ -11,6 +13,8 @@ const EditProfile = () => {
   
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
+  const [photo, setPhoto] = useState(null)
+  const [currentPhoto, setCurrentPhoto] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [nameError, setNameError] = useState('')
@@ -41,6 +45,7 @@ const EditProfile = () => {
 
       setName(data.name || '')
       setAge(data.age ? String(data.age) : '')
+      setCurrentPhoto(data.profile_picture)
     } catch (error) {
       console.error('Error loading profile:', error)
       Alert.alert('Error', 'Ocurrió un error al cargar el perfil')
@@ -53,6 +58,120 @@ const EditProfile = () => {
   useEffect(() => {
     loadProfile()
   }, [profileIdNumber])
+
+  // Configurar storage al cargar el componente
+  useEffect(() => {
+    const initializeStorage = async () => {
+      console.log('🚀 Inicializando configuración de storage...')
+      const bucketSetup = await setupStorageBucket()
+      if (bucketSetup) {
+        await checkStoragePermissions()
+      }
+    }
+    
+    initializeStorage()
+  }, [])
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!result.canceled) {
+        setPhoto(result.assets[0].uri)
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo seleccionar la imagen')
+    }
+  }
+
+  const takePhoto = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!result.canceled) {
+        setPhoto(result.assets[0].uri)
+      }
+    } catch (error) {
+      Alert.alert('Error', 'No se pudo tomar la foto')
+    }
+  }
+
+  const showImageOptions = () => {
+    Alert.alert(
+      'Cambiar Foto',
+      '¿Cómo quieres cambiar la foto?',
+      [
+        {
+          text: 'Tomar Foto',
+          onPress: takePhoto,
+        },
+        {
+          text: 'Galería',
+          onPress: pickImage,
+        },
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+      ]
+    )
+  }
+
+  const uploadImageToSupabase = async (imageUri) => {
+    try {
+      console.log('🚀 Iniciando subida de imagen...')
+      console.log('📁 URI de imagen:', imageUri)
+      
+      // Generar nombre único para el archivo
+      const timestamp = Date.now()
+      const randomString = Math.random().toString(36).substring(2, 15)
+      const fileName = `profile_${timestamp}_${randomString}.jpg`
+      console.log('📝 Nombre del archivo:', fileName)
+      
+      // Convertir la imagen a blob
+      console.log('🔄 Convirtiendo imagen a blob...')
+      const response = await fetch(imageUri)
+      const blob = await response.blob()
+      console.log('✅ Blob creado, tamaño:', blob.size, 'bytes')
+      
+      // Subir a Supabase Storage
+      console.log('📤 Subiendo imagen a Supabase Storage...')
+      const { data, error } = await supabase.storage
+        .from('profile_pictures')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) {
+        console.error('❌ Error uploading image:', error)
+        throw new Error(`No se pudo subir la imagen: ${error.message}`)
+      }
+
+      console.log('✅ Imagen subida exitosamente:', data)
+
+      // Obtener la URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile_pictures')
+        .getPublicUrl(fileName)
+
+      console.log('🔗 URL pública generada:', publicUrl)
+      return publicUrl
+    } catch (error) {
+      console.error('❌ Error in uploadImageToSupabase:', error)
+      throw error
+    }
+  }
 
   const validateForm = () => {
     let isValid = true
@@ -89,19 +208,36 @@ const EditProfile = () => {
 
     try {
       setSaving(true)
+      console.log('💾 Iniciando actualización de perfil...')
+      
+      let profilePictureUrl = currentPhoto
+      
+      // Si hay una nueva foto, subirla primero
+      if (photo) {
+        console.log('📤 Subiendo nueva foto...')
+        profilePictureUrl = await uploadImageToSupabase(photo)
+        console.log('✅ Nueva foto subida, URL:', profilePictureUrl)
+      } else {
+        console.log('📸 Manteniendo foto actual:', currentPhoto)
+      }
+      
+      console.log('💾 Actualizando perfil en base de datos...')
       const { error } = await supabase
         .from('profiles')
         .update({
           name: name.trim(),
-          age: parseInt(age)
+          age: parseInt(age),
+          profile_picture: profilePictureUrl
         })
         .eq('id', profileIdNumber)
 
       if (error) {
-        console.error('Error updating profile:', error)
+        console.error('❌ Error updating profile:', error)
         Alert.alert('Error', 'No se pudo actualizar el perfil')
         return
       }
+
+      console.log('✅ Perfil actualizado exitosamente')
 
       Alert.alert(
         'Éxito',
@@ -232,6 +368,28 @@ const EditProfile = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
+        {/* Photo Section */}
+        <View className="items-center mb-6">
+          <TouchableOpacity 
+            onPress={showImageOptions}
+            className="w-32 h-32 bg-gray-200 rounded-full items-center justify-center border-2 border-dashed border-gray-400 overflow-hidden"
+          >
+            {photo ? (
+              <Image source={{ uri: photo }} className="w-32 h-32 rounded-full" resizeMode="cover" />
+            ) : currentPhoto ? (
+              <Image source={{ uri: currentPhoto }} className="w-32 h-32 rounded-full" resizeMode="cover" />
+            ) : (
+              <View className="items-center">
+                <Ionicons name="camera" size={48} color="gray" />
+                <Text className="text-gray-500 text-sm mt-2 text-center">Cambiar Foto</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <Text className="text-gray-600 text-sm mt-2 text-center">
+            Toca para cambiar la foto
+          </Text>
+        </View>
+
         {/* Form Fields */}
         <View className="space-y-6">
           {/* Name Input */}

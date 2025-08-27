@@ -1,9 +1,10 @@
 import { Text, View, TouchableOpacity, TextInput, Alert, Image } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../src/supabaseClient'
+import { setupStorageBucket, checkStoragePermissions } from '../src/supabaseStorageSetup'
 import "../global.css"
 
 const AddPerson = () => {
@@ -11,6 +12,19 @@ const AddPerson = () => {
   const [age, setAge] = useState('')
   const [photo, setPhoto] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Configurar storage al cargar el componente
+  useEffect(() => {
+    const initializeStorage = async () => {
+      console.log('🚀 Inicializando configuración de storage...')
+      const bucketSetup = await setupStorageBucket()
+      if (bucketSetup) {
+        await checkStoragePermissions()
+      }
+    }
+    
+    initializeStorage()
+  }, [])
 
   const pickImage = async () => {
     try {
@@ -66,6 +80,62 @@ const AddPerson = () => {
     )
   }
 
+  const uploadImageToSupabase = async (imageUri) => {
+    try {
+      console.log('🚀 Iniciando subida de imagen...')
+      console.log('📁 URI de imagen:', imageUri)
+      
+      // Generar nombre único para el archivo
+      const timestamp = Date.now()
+      const randomString = Math.random().toString(36).substring(2, 15)
+      const fileName = `profile_${timestamp}_${randomString}.jpg`
+      console.log('📝 Nombre del archivo:', fileName)
+      
+      // Convertir la imagen a blob
+      console.log('🔄 Convirtiendo imagen a blob...')
+      const response = await fetch(imageUri)
+      const blob = await response.blob()
+      console.log('✅ Blob creado, tamaño:', blob.size, 'bytes')
+      
+      // Verificar si el bucket existe
+      console.log('🔍 Verificando bucket profile_pictures...')
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets()
+      if (bucketsError) {
+        console.error('❌ Error listando buckets:', bucketsError)
+      } else {
+        console.log('📦 Buckets disponibles:', buckets.map(b => b.name))
+      }
+      
+      // Subir a Supabase Storage
+      console.log('📤 Subiendo imagen a Supabase Storage...')
+      const { data, error } = await supabase.storage
+        .from('profile_pictures')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) {
+        console.error('❌ Error uploading image:', error)
+        throw new Error(`No se pudo subir la imagen: ${error.message}`)
+      }
+
+      console.log('✅ Imagen subida exitosamente:', data)
+
+      // Obtener la URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile_pictures')
+        .getPublicUrl(fileName)
+
+      console.log('🔗 URL pública generada:', publicUrl)
+      return publicUrl
+    } catch (error) {
+      console.error('❌ Error in uploadImageToSupabase:', error)
+      throw error
+    }
+  }
+
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Por favor ingresa el nombre')
@@ -91,23 +161,35 @@ const AddPerson = () => {
     setIsLoading(true)
 
     try {
+      console.log('💾 Iniciando guardado de perfil...')
+      console.log('📸 Foto seleccionada:', photo)
+      
+      // Primero subir la imagen a Supabase Storage
+      console.log('📤 Subiendo imagen...')
+      const imageUrl = await uploadImageToSupabase(photo)
+      console.log('✅ Imagen subida, URL:', imageUrl)
+      
+      // Luego guardar el perfil con la URL de la imagen
+      console.log('💾 Guardando perfil en base de datos...')
       const { data, error } = await supabase
         .from('profiles')
         .insert([
           {
             name: name.trim(),
             age: ageNumber,
-            profile_picture: photo,
+            profile_picture: imageUrl,
             created_at: new Date().toISOString()
           }
         ])
         .select()
 
       if (error) {
-        console.error('Error inserting profile:', error)
+        console.error('❌ Error inserting profile:', error)
         Alert.alert('Error', 'No se pudo guardar la persona en la base de datos')
         return
       }
+
+      console.log('✅ Perfil guardado exitosamente:', data)
 
       Alert.alert(
         'Éxito',
