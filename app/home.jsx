@@ -13,23 +13,18 @@ const Home = () => {
   const loadProfiles = async () => {
     try {
       setLoading(true)
-      console.log('🔄 Cargando perfiles...')
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false })
 
       if (error) {
-        console.error('Error loading profiles:', error)
         Alert.alert('Error', 'No se pudieron cargar los perfiles')
         return
       }
 
-      console.log('✅ Perfiles cargados:', data?.length || 0)
-      console.log('📸 URLs de fotos:', data?.map(p => ({ id: p.id, name: p.name, photo: p.profile_picture_url })))
       setProfiles(data || [])
     } catch (error) {
-      console.error('Error loading profiles:', error)
       Alert.alert('Error', 'Ocurrió un error al cargar los perfiles')
     } finally {
       setLoading(false)
@@ -97,31 +92,19 @@ const Home = () => {
                 })}
               >
                 <View className="bg-blue-200 rounded-lg mb-2 overflow-hidden">
-                  {(() => {
-                    console.log(`🖼️ Renderizando perfil ${profile.name}:`, { 
-                      id: profile.id, 
-                      hasPhoto: !!profile.profile_picture_url, 
-                      photoUrl: profile.profile_picture_url 
-                    })
-                                         return profile.profile_picture_url ? (
-                       <View className="w-full h-24 bg-gray-200 items-center justify-center">
-                         <Image 
-                           source={{ uri: profile.profile_picture_url }} 
-                           className="w-full h-24"
-                           resizeMode="cover"
-                           onLoad={() => console.log(`✅ Imagen cargada para ${profile.name}`)}
-                           onError={(error) => {
-                             console.log(`❌ Error cargando imagen para ${profile.name}:`, error.nativeEvent)
-                             console.log(`🔗 URL que falló: ${profile.profile_picture_url}`)
-                           }}
-                         />
-                       </View>
-                     ) : (
-                       <View className="w-full h-24 bg-gray-300 items-center justify-center">
-                         <Ionicons name="person" size={32} color="gray" />
-                       </View>
-                     )
-                  })()}
+                              {profile.profile_picture_url ? (
+              <View className="w-full h-24 bg-gray-200 items-center justify-center">
+                <Image
+                  source={{ uri: profile.profile_picture_url }}
+                  className="w-full h-24"
+                  resizeMode="cover"
+                />
+              </View>
+            ) : (
+              <View className="w-full h-24 bg-gray-300 items-center justify-center">
+                <Ionicons name="person" size={32} color="gray" />
+              </View>
+            )}
                 </View>
                 <Text className="text-gray-600 text-sm">{profile.age} años</Text>
                 <Text className="font-bold text-gray-800">{profile.name}</Text>

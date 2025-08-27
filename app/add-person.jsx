@@ -3,25 +3,22 @@ import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
-import * as FileSystem from 'expo-file-system'
 import { supabase } from '../src/supabaseClient'
 import { setupStorageBucket, checkStoragePermissions } from '../src/supabaseStorageSetup'
+import { decode } from 'base64-arraybuffer'
 import "../global.css"
 
 const AddPerson = () => {
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
   const [photo, setPhoto] = useState(null)
+  const [photoAsset, setPhotoAsset] = useState(null) // Para guardar el asset completo
   const [isLoading, setIsLoading] = useState(false)
 
   // Configurar storage al cargar el componente
   useEffect(() => {
     const initializeStorage = async () => {
-      console.log('🚀 Inicializando configuración de storage...')
-      const bucketSetup = await setupStorageBucket()
-      if (bucketSetup) {
-        await checkStoragePermissions()
-      }
+      await setupStorageBucket()
     }
     
     initializeStorage()
@@ -34,10 +31,12 @@ const AddPerson = () => {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        base64: true, // 👈 importante para obtener base64
       })
 
       if (!result.canceled) {
         setPhoto(result.assets[0].uri)
+        setPhotoAsset(result.assets[0]) // Guardar el asset completo
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo seleccionar la imagen')
@@ -50,10 +49,12 @@ const AddPerson = () => {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        base64: true, // 👈 importante para obtener base64
       })
 
       if (!result.canceled) {
         setPhoto(result.assets[0].uri)
+        setPhotoAsset(result.assets[0]) // Guardar el asset completo
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo tomar la foto')
@@ -81,97 +82,42 @@ const AddPerson = () => {
     )
   }
 
-  const uploadImageToSupabase = async (imageUri) => {
-    try {
-      console.log('🚀 Iniciando subida de imagen...')
-      console.log('📁 URI de imagen:', imageUri)
-      
+    const uploadImageToSupabase = async (asset) => {
+    try {      
+      // Verificar que tenemos base64
+      if (!asset?.base64) {
+        throw new Error('La imagen no trae base64')
+      }
+             
       // Generar nombre único para el archivo
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 15)
       const fileName = `profile_${timestamp}_${randomString}.jpg`
-      console.log('📝 Nombre del archivo:', fileName)
+      const arrayBuffer = decode(asset.base64)
       
-      // Verificar si la URI es válida
-      if (!imageUri || imageUri.trim() === '') {
-        throw new Error('URI de imagen inválida')
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error('El ArrayBuffer está vacío (0 bytes)')
       }
-      
-      // Leer el archivo usando FileSystem
-      console.log('📖 Leyendo archivo con FileSystem...')
-      const fileInfo = await FileSystem.getInfoAsync(imageUri)
-      console.log('📊 Información del archivo:', fileInfo)
-      
-      if (!fileInfo.exists) {
-        throw new Error('El archivo no existe')
-      }
-      
-      console.log('📁 Tamaño del archivo:', fileInfo.size, 'bytes')
-      
-      // Leer el archivo como base64
-      console.log('🔄 Leyendo archivo como base64...')
-      const base64Data = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64
-      })
-      
-      console.log('✅ Base64 leído, longitud:', base64Data.length)
-      
-      // Convertir base64 a blob
-      console.log('🔄 Convirtiendo base64 a blob...')
-      const byteCharacters = atob(base64Data)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      const blob = new Blob([byteArray], { type: 'image/jpeg' })
-      
-      console.log('✅ Blob creado, tamaño:', blob.size, 'bytes')
-      console.log('📋 Blob type:', blob.type)
-      
-      if (blob.size === 0) {
-        throw new Error('El blob está vacío (0 bytes)')
-      }
-      
-      // Verificar si el bucket existe
-      console.log('🔍 Verificando bucket profile_pictures...')
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets()
-      if (bucketsError) {
-        console.error('❌ Error listando buckets:', bucketsError)
-      } else {
-        console.log('📦 Buckets disponibles:', buckets.map(b => b.name))
-      }
-      
-      // Subir a Supabase Storage
-      console.log('📤 Subiendo imagen a Supabase Storage...')
-      console.log('📦 Bucket:', 'profile_pictures')
-      console.log('📝 Nombre archivo:', fileName)
-      console.log('📊 Tamaño blob:', blob.size, 'bytes')
       
       const { data, error } = await supabase.storage
         .from('profile_pictures')
-        .upload(fileName, blob, {
+        .upload(fileName, arrayBuffer, {
           contentType: 'image/jpeg',
           cacheControl: '3600',
           upsert: false
         })
 
       if (error) {
-        console.error('❌ Error uploading image:', error)
         throw new Error(`No se pudo subir la imagen: ${error.message}`)
       }
-
-      console.log('✅ Imagen subida exitosamente:', data)
 
       // Obtener la URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('profile_pictures')
         .getPublicUrl(fileName)
 
-      console.log('🔗 URL pública generada:', publicUrl)
       return publicUrl
     } catch (error) {
-      console.error('❌ Error in uploadImageToSupabase:', error)
       throw error
     }
   }
@@ -193,43 +139,34 @@ const AddPerson = () => {
       return
     }
 
-    if (!photo) {
+    if (!photoAsset) {
       Alert.alert('Error', 'Por favor selecciona una foto')
       return
     }
 
     setIsLoading(true)
 
-    try {
-      console.log('💾 Iniciando guardado de perfil...')
-      console.log('📸 Foto seleccionada:', photo)
-      
+        try {
       // Primero subir la imagen a Supabase Storage
-      console.log('📤 Subiendo imagen...')
-      const imageUrl = await uploadImageToSupabase(photo)
-      console.log('✅ Imagen subida, URL:', imageUrl)
+      const imageUrl = await uploadImageToSupabase(photoAsset)
       
-             // Luego guardar el perfil con la URL de la imagen
-       console.log('💾 Guardando perfil en base de datos...')
-       const { data, error } = await supabase
-         .from('profiles')
-         .insert([
-           {
-             name: name.trim(),
-             age: ageNumber,
-             profile_picture_url: imageUrl,
-             created_at: new Date().toISOString()
-           }
-         ])
-         .select()
+      // Luego guardar el perfil con la URL de la imagen
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            name: name.trim(),
+            age: ageNumber,
+            profile_picture_url: imageUrl,
+            created_at: new Date().toISOString()
+          }
+        ])
+        .select()
 
       if (error) {
-        console.error('❌ Error inserting profile:', error)
         Alert.alert('Error', 'No se pudo guardar la persona en la base de datos')
         return
       }
-
-      console.log('✅ Perfil guardado exitosamente:', data)
 
       Alert.alert(
         'Éxito',
@@ -242,7 +179,6 @@ const AddPerson = () => {
         ]
       )
     } catch (error) {
-      console.error('Error saving profile:', error)
       Alert.alert('Error', 'Ocurrió un error inesperado al guardar')
     } finally {
       setIsLoading(false)

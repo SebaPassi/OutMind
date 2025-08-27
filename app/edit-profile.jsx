@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../src/supabaseClient'
 import { setupStorageBucket, checkStoragePermissions } from '../src/supabaseStorageSetup'
+import { decode } from 'base64-arraybuffer'
 import "../global.css"
 
 const EditProfile = () => {
@@ -14,6 +15,7 @@ const EditProfile = () => {
   const [name, setName] = useState('')
   const [age, setAge] = useState('')
   const [photo, setPhoto] = useState(null)
+  const [photoAsset, setPhotoAsset] = useState(null) // Para guardar el asset completo
   const [currentPhoto, setCurrentPhoto] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -37,7 +39,6 @@ const EditProfile = () => {
         .single()
 
       if (error) {
-        console.error('Error loading profile:', error)
         Alert.alert('Error', 'No se pudo cargar el perfil')
         router.back()
         return
@@ -47,7 +48,6 @@ const EditProfile = () => {
        setAge(data.age ? String(data.age) : '')
        setCurrentPhoto(data.profile_picture_url || data.profile_picture)
     } catch (error) {
-      console.error('Error loading profile:', error)
       Alert.alert('Error', 'Ocurrió un error al cargar el perfil')
       router.back()
     } finally {
@@ -62,11 +62,7 @@ const EditProfile = () => {
   // Configurar storage al cargar el componente
   useEffect(() => {
     const initializeStorage = async () => {
-      console.log('🚀 Inicializando configuración de storage...')
-      const bucketSetup = await setupStorageBucket()
-      if (bucketSetup) {
-        await checkStoragePermissions()
-      }
+      await setupStorageBucket()
     }
     
     initializeStorage()
@@ -79,10 +75,12 @@ const EditProfile = () => {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        base64: true, // 👈 importante para obtener base64
       })
 
       if (!result.canceled) {
         setPhoto(result.assets[0].uri)
+        setPhotoAsset(result.assets[0]) // Guardar el asset completo
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo seleccionar la imagen')
@@ -95,10 +93,12 @@ const EditProfile = () => {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
+        base64: true, // 👈 importante para obtener base64
       })
 
       if (!result.canceled) {
         setPhoto(result.assets[0].uri)
+        setPhotoAsset(result.assets[0]) // Guardar el asset completo
       }
     } catch (error) {
       Alert.alert('Error', 'No se pudo tomar la foto')
@@ -126,49 +126,45 @@ const EditProfile = () => {
     )
   }
 
-  const uploadImageToSupabase = async (imageUri) => {
+  const uploadImageToSupabase = async (asset) => {
     try {
-      console.log('🚀 Iniciando subida de imagen...')
-      console.log('📁 URI de imagen:', imageUri)
+      // Verificar que tenemos base64
+      if (!asset?.base64) {
+        throw new Error('La imagen no trae base64')
+      }
       
       // Generar nombre único para el archivo
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 15)
       const fileName = `profile_${timestamp}_${randomString}.jpg`
-      console.log('📝 Nombre del archivo:', fileName)
       
-      // Convertir la imagen a blob
-      console.log('🔄 Convirtiendo imagen a blob...')
-      const response = await fetch(imageUri)
-      const blob = await response.blob()
-      console.log('✅ Blob creado, tamaño:', blob.size, 'bytes')
+      // Convertir base64 a ArrayBuffer
+      const arrayBuffer = decode(asset.base64)
       
-      // Subir a Supabase Storage
-      console.log('📤 Subiendo imagen a Supabase Storage...')
+      if (arrayBuffer.byteLength === 0) {
+        throw new Error('El ArrayBuffer está vacío (0 bytes)')
+      }
+      
+      // Subir a Supabase Storage usando ArrayBuffer
       const { data, error } = await supabase.storage
         .from('profile_pictures')
-        .upload(fileName, blob, {
+        .upload(fileName, arrayBuffer, {
           contentType: 'image/jpeg',
           cacheControl: '3600',
           upsert: false
         })
 
       if (error) {
-        console.error('❌ Error uploading image:', error)
         throw new Error(`No se pudo subir la imagen: ${error.message}`)
       }
-
-      console.log('✅ Imagen subida exitosamente:', data)
 
       // Obtener la URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('profile_pictures')
         .getPublicUrl(fileName)
 
-      console.log('🔗 URL pública generada:', publicUrl)
       return publicUrl
     } catch (error) {
-      console.error('❌ Error in uploadImageToSupabase:', error)
       throw error
     }
   }
@@ -206,38 +202,30 @@ const EditProfile = () => {
       return
     }
 
-    try {
+        try {
       setSaving(true)
-      console.log('💾 Iniciando actualización de perfil...')
       
       let profilePictureUrl = currentPhoto
       
       // Si hay una nueva foto, subirla primero
-      if (photo) {
-        console.log('📤 Subiendo nueva foto...')
-        profilePictureUrl = await uploadImageToSupabase(photo)
-        console.log('✅ Nueva foto subida, URL:', profilePictureUrl)
-      } else {
-        console.log('📸 Manteniendo foto actual:', currentPhoto)
+      if (photoAsset) {
+        profilePictureUrl = await uploadImageToSupabase(photoAsset)
       }
       
-             console.log('💾 Actualizando perfil en base de datos...')
-       const { error } = await supabase
-         .from('profiles')
-         .update({
-           name: name.trim(),
-           age: parseInt(age),
-           profile_picture_url: profilePictureUrl
-         })
-         .eq('id', profileIdNumber)
+      // Actualizar perfil en base de datos
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: name.trim(),
+          age: parseInt(age),
+          profile_picture_url: profilePictureUrl
+        })
+        .eq('id', profileIdNumber)
 
       if (error) {
-        console.error('❌ Error updating profile:', error)
         Alert.alert('Error', 'No se pudo actualizar el perfil')
         return
       }
-
-      console.log('✅ Perfil actualizado exitosamente')
 
       Alert.alert(
         'Éxito',
@@ -250,7 +238,6 @@ const EditProfile = () => {
         ]
       )
     } catch (error) {
-      console.error('Error updating profile:', error)
       Alert.alert('Error', 'Ocurrió un error al actualizar el perfil')
     } finally {
       setSaving(false)
@@ -296,7 +283,7 @@ const EditProfile = () => {
                 .eq('user_id', profileIdNumber)
 
               if (tasksError) {
-                console.error('Error deleting user tasks:', tasksError)
+                // Error deleting user tasks
               }
 
               // Luego eliminar el perfil
@@ -306,7 +293,6 @@ const EditProfile = () => {
                 .eq('id', profileIdNumber)
 
               if (profileError) {
-                console.error('Error deleting profile:', profileError)
                 Alert.alert('Error', 'No se pudo eliminar el perfil')
                 return
               }
@@ -321,10 +307,9 @@ const EditProfile = () => {
                   },
                 ]
               )
-            } catch (error) {
-              console.error('Error deleting profile:', error)
-              Alert.alert('Error', 'Ocurrió un error al eliminar el perfil')
-            }
+                         } catch (error) {
+               Alert.alert('Error', 'Ocurrió un error al eliminar el perfil')
+             }
           },
         },
       ]
