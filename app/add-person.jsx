@@ -169,19 +169,19 @@ const AddPerson = () => {
       const imageUrl = await uploadImageToSupabase(photo)
       console.log('✅ Imagen subida, URL:', imageUrl)
       
-      // Luego guardar el perfil con la URL de la imagen
-      console.log('💾 Guardando perfil en base de datos...')
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            name: name.trim(),
-            age: ageNumber,
-            profile_picture: imageUrl,
-            created_at: new Date().toISOString()
-          }
-        ])
-        .select()
+             // Luego guardar el perfil con la URL de la imagen
+       console.log('💾 Guardando perfil en base de datos...')
+       const { data, error } = await supabase
+         .from('profiles')
+         .insert([
+           {
+             name: name.trim(),
+             age: ageNumber,
+             profile_picture_url: imageUrl,
+             created_at: new Date().toISOString()
+           }
+         ])
+         .select()
 
       if (error) {
         console.error('❌ Error inserting profile:', error)

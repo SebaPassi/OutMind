@@ -201,9 +201,9 @@ const Profile = () => {
       {/* Profile Section */}
       <View className="items-center py-6">
         <View className="w-24 h-24 bg-gray-300 rounded-lg items-center justify-center mb-4 overflow-hidden">
-          {profile.profile_picture ? (
-            <Image 
-              source={{ uri: profile.profile_picture }} 
+                       {profile.profile_picture_url ? (
+               <Image 
+                 source={{ uri: profile.profile_picture_url }} 
               className="w-24 h-24 rounded-lg"
               resizeMode="cover"
             />

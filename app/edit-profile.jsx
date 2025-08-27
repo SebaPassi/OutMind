@@ -43,9 +43,9 @@ const EditProfile = () => {
         return
       }
 
-      setName(data.name || '')
-      setAge(data.age ? String(data.age) : '')
-      setCurrentPhoto(data.profile_picture)
+             setName(data.name || '')
+       setAge(data.age ? String(data.age) : '')
+       setCurrentPhoto(data.profile_picture_url || data.profile_picture)
     } catch (error) {
       console.error('Error loading profile:', error)
       Alert.alert('Error', 'Ocurrió un error al cargar el perfil')
@@ -221,15 +221,15 @@ const EditProfile = () => {
         console.log('📸 Manteniendo foto actual:', currentPhoto)
       }
       
-      console.log('💾 Actualizando perfil en base de datos...')
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: name.trim(),
-          age: parseInt(age),
-          profile_picture: profilePictureUrl
-        })
-        .eq('id', profileIdNumber)
+             console.log('💾 Actualizando perfil en base de datos...')
+       const { error } = await supabase
+         .from('profiles')
+         .update({
+           name: name.trim(),
+           age: parseInt(age),
+           profile_picture_url: profilePictureUrl
+         })
+         .eq('id', profileIdNumber)
 
       if (error) {
         console.error('❌ Error updating profile:', error)
