@@ -103,17 +103,24 @@ const Home = () => {
                       hasPhoto: !!profile.profile_picture_url, 
                       photoUrl: profile.profile_picture_url 
                     })
-                    return profile.profile_picture_url ? (
-                      <Image 
-                        source={{ uri: profile.profile_picture_url }} 
-                        className="w-full h-24"
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View className="w-full h-24 bg-gray-300 items-center justify-center">
-                        <Ionicons name="person" size={32} color="gray" />
-                      </View>
-                    )
+                                         return profile.profile_picture_url ? (
+                       <View className="w-full h-24 bg-gray-200 items-center justify-center">
+                         <Image 
+                           source={{ uri: profile.profile_picture_url }} 
+                           className="w-full h-24"
+                           resizeMode="cover"
+                           onLoad={() => console.log(`✅ Imagen cargada para ${profile.name}`)}
+                           onError={(error) => {
+                             console.log(`❌ Error cargando imagen para ${profile.name}:`, error.nativeEvent)
+                             console.log(`🔗 URL que falló: ${profile.profile_picture_url}`)
+                           }}
+                         />
+                       </View>
+                     ) : (
+                       <View className="w-full h-24 bg-gray-300 items-center justify-center">
+                         <Ionicons name="person" size={32} color="gray" />
+                       </View>
+                     )
                   })()}
                 </View>
                 <Text className="text-gray-600 text-sm">{profile.age} años</Text>
