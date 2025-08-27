@@ -2,6 +2,7 @@ import { Text, View, Image, TouchableOpacity, ScrollView, TextInput, Alert } fro
 import React, { useEffect, useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router, useFocusEffect } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../src/supabaseClient'
 import "../global.css"
 
@@ -46,7 +47,7 @@ const Home = () => {
   )
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
       <View className="flex-row justify-between items-center px-4 py-3">
         <TouchableOpacity>
@@ -185,7 +186,7 @@ const Home = () => {
       <View className="bg-white h-1">
         <View className="w-32 h-1 bg-gray-300 rounded-full mx-auto"></View>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 

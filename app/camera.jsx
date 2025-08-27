@@ -1,31 +1,52 @@
-import { Text, View, TouchableOpacity, Alert } from 'react-native'
+import { Text, View, TouchableOpacity, Alert, Modal } from 'react-native'
 import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import "../global.css"
 
 const CameraView = () => {
-  const [isCameraReady, setIsCameraReady] = useState(true)
+  const [recognizedPerson, setRecognizedPerson] = useState(null)
+  const [showResult, setShowResult] = useState(false)
 
   const takePicture = async () => {
-    Alert.alert('Cámara', 'Función de cámara en desarrollo')
+    // Simular reconocimiento para demostración
+    setRecognizedPerson({
+      profileId: 'demo-1',
+      name: 'Demo Person',
+      confidence: 95.5
+    })
+    setShowResult(true)
   }
 
   const flipCamera = () => {
     Alert.alert('Cámara', 'Cambiar cámara en desarrollo')
   }
 
+  const closeResult = () => {
+    setShowResult(false)
+    setRecognizedPerson(null)
+  }
+
+  const goToProfile = () => {
+    if (recognizedPerson) {
+      closeResult()
+      router.push({
+        pathname: '/profile',
+        params: { profileId: recognizedPerson.profileId }
+      })
+    }
+  }
+
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-black">
       {/* Header */}
-      <View className="flex-row justify-between items-center px-4 py-3">
+      <View className="flex-row justify-between items-center px-4 py-3 bg-black">
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="menu" size={24} color="black" />
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <Text className="text-black font-bold text-lg">OutMind</Text>
-        <View className="w-8 h-8 bg-gray-300 rounded-full items-center justify-center">
-          <Ionicons name="people" size={20} color="white" />
-        </View>
+        <Text className="text-white font-bold text-lg">Reconocimiento Facial</Text>
+        <View className="w-8 h-8" />
       </View>
 
       {/* Camera View */}
@@ -36,8 +57,14 @@ const CameraView = () => {
             <Ionicons name="camera" size={64} color="white" />
             <Text className="text-white text-lg mt-4">Vista de Cámara</Text>
             <Text className="text-white text-sm mt-2 text-center px-4">
-              La funcionalidad de cámara estará disponible próximamente
+              Configurando reconocimiento facial...
             </Text>
+            <TouchableOpacity 
+              onPress={takePicture}
+              className="mt-4 bg-blue-600 px-4 py-2 rounded-lg"
+            >
+              <Text className="text-white font-semibold">Probar Reconocimiento</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Camera Controls Overlay */}
@@ -54,7 +81,7 @@ const CameraView = () => {
               {/* Take Picture Button */}
               <TouchableOpacity 
                 onPress={takePicture}
-                className="w-16 h-16 bg-white rounded-full items-center justify-center border-4 border-gray-200"
+                className="w-16 h-16 rounded-full items-center justify-center border-4 bg-white border-gray-200"
               >
                 <View className="w-12 h-12 bg-white rounded-full"></View>
               </TouchableOpacity>
@@ -69,6 +96,56 @@ const CameraView = () => {
           </View>
         </View>
       </View>
+
+      {/* Recognition Result Modal */}
+      <Modal
+        visible={showResult}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closeResult}
+      >
+        <View className="flex-1 bg-black bg-opacity-50 justify-center items-center px-4">
+          <View className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <View className="items-center mb-4">
+              <Ionicons name="checkmark-circle" size={64} color="#10B981" />
+              <Text className="text-xl font-bold text-gray-800 mt-2">
+                ¡Persona Reconocida!
+              </Text>
+            </View>
+
+            {recognizedPerson && (
+              <View className="items-center mb-6">
+                <Text className="text-2xl font-bold text-gray-800">
+                  {recognizedPerson.name}
+                </Text>
+                <Text className="text-gray-600 mt-1">
+                  Confianza: {recognizedPerson.confidence.toFixed(1)}%
+                </Text>
+              </View>
+            )}
+
+            <View className="space-y-3">
+              <TouchableOpacity
+                onPress={goToProfile}
+                className="bg-blue-600 py-3 rounded-lg items-center"
+              >
+                <Text className="text-white font-semibold text-lg">
+                  Ver Perfil
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={closeResult}
+                className="bg-gray-200 py-3 rounded-lg items-center"
+              >
+                <Text className="text-gray-700 font-semibold">
+                  Continuar Escaneando
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Bottom Navigation */}
       <View className="bg-white border-t border-gray-200 px-6 py-3">
@@ -116,7 +193,7 @@ const CameraView = () => {
       <View className="bg-white h-1">
         <View className="w-32 h-1 bg-gray-300 rounded-full mx-auto"></View>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 

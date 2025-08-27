@@ -2,10 +2,12 @@ import { Text, View, TouchableOpacity, TextInput, Alert, Image } from 'react-nat
 import React, { useState, useEffect } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../src/supabaseClient'
 import { setupStorageBucket, checkStoragePermissions } from '../src/supabaseStorageSetup'
 import { decode } from 'base64-arraybuffer'
+import { extractFaceFeatures, saveFaceFeatures } from '../src/faceRecognition'
 import "../global.css"
 
 const AddPerson = () => {
@@ -168,6 +170,15 @@ const AddPerson = () => {
         return
       }
 
+      // Extraer y guardar características faciales
+      try {
+        const faceFeatures = await extractFaceFeatures(photo)
+        await saveFaceFeatures(data[0].id, faceFeatures)
+      } catch (faceError) {
+        // Si falla la extracción facial, continuar sin ella
+        console.warn('No se pudieron extraer características faciales:', faceError.message)
+      }
+
       Alert.alert(
         'Éxito',
         `${name} ha sido agregado a la familia`,
@@ -186,7 +197,7 @@ const AddPerson = () => {
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
       <View className="flex-row justify-between items-center px-4 py-3">
         <TouchableOpacity onPress={() => router.back()}>
@@ -275,7 +286,7 @@ const AddPerson = () => {
           </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 

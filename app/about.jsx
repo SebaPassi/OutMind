@@ -2,11 +2,12 @@ import { Text, View, ScrollView, Image, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { Link, router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import Logo from "../assets/OutMind_Logo.png"
 
 const About = () => {
   return (
-    <View className="flex-1 bg-gradient-to-b from-blue-50 to-white">
+    <SafeAreaView className="flex-1 bg-gradient-to-b from-blue-50 to-white">
       <ScrollView className="flex-1 px-6">
         <View className="items-center justify-start pt-16 pb-8">
           
@@ -124,7 +125,7 @@ const About = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   )
 }
 
