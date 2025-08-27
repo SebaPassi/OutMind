@@ -109,7 +109,7 @@ const AddPerson = () => {
       // Subir a Supabase Storage
       console.log('📤 Subiendo imagen a Supabase Storage...')
       const { data, error } = await supabase.storage
-        .from('profile_picture')
+        .from('profile_pictures')
         .upload(fileName, blob, {
           contentType: 'image/jpeg',
           cacheControl: '3600',
@@ -125,7 +125,7 @@ const AddPerson = () => {
 
       // Obtener la URL pública
       const { data: { publicUrl } } = supabase.storage
-        .from('profile_picture')
+        .from('profile_pictures')
         .getPublicUrl(fileName)
 
       console.log('🔗 URL pública generada:', publicUrl)

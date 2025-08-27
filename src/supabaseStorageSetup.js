@@ -14,14 +14,14 @@ export const setupStorageBucket = async () => {
     
     console.log('📦 Buckets existentes:', buckets.map(b => b.name))
     
-    // Verificar si el bucket profile_picture existe
-    const profilePictureBucket = buckets.find(bucket => bucket.name === 'profile_picture')
+    // Verificar si el bucket profile_pictures existe
+    const profilePicturesBucket = buckets.find(bucket => bucket.name === 'profile_pictures')
     
-    if (!profilePictureBucket) {
-      console.log('📁 Bucket profile_picture no existe')
+    if (!profilePicturesBucket) {
+      console.log('📁 Bucket profile_pictures no existe')
       console.log('⚠️  Por favor crea el bucket manualmente en Supabase Dashboard:')
       console.log('   1. Ve a Storage en el dashboard')
-      console.log('   2. Crea un nuevo bucket llamado "profile_picture"')
+      console.log('   2. Crea un nuevo bucket llamado "profile_pictures"')
       console.log('   3. Márcalo como público')
       console.log('   4. Configura límite de 5MB')
       console.log('   5. Permite tipos: image/jpeg, image/png, image/gif')
@@ -29,7 +29,7 @@ export const setupStorageBucket = async () => {
       // Intentar crear el bucket (puede fallar por RLS)
       try {
         console.log('🔄 Intentando crear bucket automáticamente...')
-        const { data: newBucket, error: createError } = await supabase.storage.createBucket('profile_picture', {
+        const { data: newBucket, error: createError } = await supabase.storage.createBucket('profile_pictures', {
           public: true,
           allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif'],
           fileSizeLimit: 5242880 // 5MB
@@ -41,14 +41,14 @@ export const setupStorageBucket = async () => {
           return false
         }
         
-        console.log('✅ Bucket profile_picture creado exitosamente:', newBucket)
+        console.log('✅ Bucket profile_pictures creado exitosamente:', newBucket)
       } catch (createError) {
         console.error('❌ Error creando bucket:', createError)
         console.log('💡 El bucket debe crearse manualmente en el dashboard')
         return false
       }
     } else {
-      console.log('✅ Bucket profile_picture ya existe')
+      console.log('✅ Bucket profile_pictures ya existe')
     }
     
     return true
@@ -64,7 +64,7 @@ export const checkStoragePermissions = async () => {
     
     // Intentar listar archivos en el bucket
     const { data: files, error } = await supabase.storage
-      .from('profile_picture')
+      .from('profile_pictures')
       .list()
     
     if (error) {
