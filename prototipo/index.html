@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OutMind - Aruco + TTS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <header class="bg-indigo-600 text-white p-4 flex items-center shadow-md">
+    <img src="https://res.cloudinary.com/davxupqlx/image/upload/v1755867862/OutMind_Logo_icdv2z.png" 
+         alt="logo" class="w-10 h-10 mr-3">
+    <h1 class="text-xl font-bold">OutMind - Recordatorios Inteligentes</h1>
+  </header>
+
+  <!-- MAIN -->
+  <main class="flex-1 flex">
+
+    <!-- PREVIEW DE CAMARA -->
+    <div class="flex-1 flex items-center justify-center bg-gray-200 relative">
+      <div id="camera-wrapper" class="rounded-xl overflow-hidden shadow-xl border-4 border-indigo-500">
+        <!-- Aquí inyectamos el canvas de la cámara -->
+        <div id="camera-preview" class="w-[640px] h-[480px] relative"></div>
+      </div>
+
+      <div id="estado" 
+           class="absolute bottom-4 left-4 bg-white shadow-md px-4 py-2 rounded-lg text-sm font-semibold text-gray-700">
+        Estado: <span id="estado-texto" class="text-green-600">Esperando...</span>
+      </div>
+    </div>
+
+    <!-- PANEL LATERAL -->
+    <aside class="w-80 bg-white border-l shadow-lg p-4 overflow-y-auto">
+      <h2 class="text-lg font-semibold mb-4 text-indigo-600">📋 Mensajes detectados</h2>
+      <ul id="mensajes" class="space-y-2 text-sm">
+        <!-- Aquí se agregan los mensajes -->
+      </ul>
+    </aside>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-gray-800 text-gray-300 p-3 text-center text-xs">
+    OutMind © 2025 - Demo con Aruco + TTS
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://app.protobject.com/framework/p.js"></script>
+  <script src="config.js"></script>
+  <script>
+    Protobject.Aruco.start(200, 0);
+
+    let isSpeaking = false;
+
+    Protobject.Aruco.onData((data) => {
+      if (isSpeaking) return;
+
+      if (data[100]) {
+        mostrarMensaje("Sofía, recuerda sacar al perro a las 19:00");
+        decir("Sofía, recuerda sacar al perro a las 19:00");
+      }
+
+      if (data[200]) {
+        mostrarMensaje("Sebastián, recuerda que tienes un partido de tenis a las 20:00");
+        decir("Sebastián, recuerda que tienes un partido de tenis a las 20:00");
+      }
+    });
+
+    // 👉 Le decimos que dibuje el canvas dentro del div #camera-preview
+    Protobject.Aruco.showPreview({
+      width: 640,
+      height: 480,
+      elementId: "camera-preview"
+    });
+
+    // 👇 Forzamos al canvas a quedarse dentro del contenedor y no flotando
+    setTimeout(() => {
+      const canvas = document.querySelector("canvas");
+      const container = document.getElementById("camera-preview");
+      if (canvas && container && !container.contains(canvas)) {
+        container.appendChild(canvas);
+        canvas.style.position = "relative"; // lo quitamos de absolute
+        canvas.style.top = "0";
+        canvas.style.left = "0";
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+      }
+    }, 500);
+
+    function decir(texto) {
+      isSpeaking = true;
+      document.getElementById("estado-texto").innerText = "Hablando...";
+      document.getElementById("estado-texto").className = "text-red-600";
+
+      Protobject.TextToSpeech.play("es", texto);
+
+      const duracion = Math.max(3000, (texto.length / 13) * 1000);
+      setTimeout(() => {
+        isSpeaking = false;
+        document.getElementById("estado-texto").innerText = "Esperando...";
+        document.getElementById("estado-texto").className = "text-green-600";
+      }, duracion);
+    }
+
+    function mostrarMensaje(texto) {
+      const lista = document.getElementById("mensajes");
+      const item = document.createElement("li");
+      item.className = "bg-indigo-50 border border-indigo-200 rounded-lg p-2 shadow-sm";
+      item.innerText = texto;
+      lista.prepend(item);
+    }
+  </script>
+</body>
+</html>
