@@ -1,6 +1,6 @@
 {
   "expo": {
-    "scheme": "outmind_app", 
+    "scheme": "outmind_app",
     "name": "OutMind",
     "slug": "OutMind",
     "version": "1.0.0",
@@ -25,6 +25,9 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }
