@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import * as FileSystem from 'expo-file-system'
 import { supabase } from '../src/supabaseClient'
 import "../global.css"
 
@@ -11,6 +12,7 @@ const AddPerson = () => {
   const [age, setAge] = useState('')
   const [photo, setPhoto] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const pickImage = async () => {
     try {
@@ -66,6 +68,86 @@ const AddPerson = () => {
     )
   }
 
+  // Función mejorada para subir imagen a Storage
+  const uploadToStorage = async (uri) => {
+    try {
+      console.log('🔄 Iniciando subida de imagen...')
+      console.log('📍 URI local:', uri)
+      
+      // Verificar que el archivo existe y tiene contenido
+      const fileInfo = await FileSystem.getInfoAsync(uri)
+      console.log('📁 Información del archivo:', fileInfo)
+      
+      if (!fileInfo.exists) {
+        throw new Error('El archivo no existe')
+      }
+      
+      if (fileInfo.size === 0) {
+        throw new Error('El archivo está vacío (0 bytes)')
+      }
+      
+      console.log('📦 Tamaño del archivo:', fileInfo.size, 'bytes')
+      
+      // Generar nombre único para evitar conflictos
+      const timestamp = Date.now()
+      const randomString = Math.random().toString(36).substring(2, 15)
+      const fileName = `profile_${timestamp}_${randomString}.jpg`
+      
+      console.log('📝 Nombre del archivo:', fileName)
+      
+      // Leer el archivo como base64
+      console.log('📖 Leyendo archivo como base64...')
+      const base64Data = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      })
+      
+      if (!base64Data || base64Data.length === 0) {
+        throw new Error('No se pudo leer el contenido del archivo')
+      }
+      
+      console.log('📊 Tamaño del base64:', base64Data.length, 'caracteres')
+      
+      // Subir a Supabase Storage usando base64 directamente
+      console.log('☁️ Subiendo a Supabase Storage...')
+      const { error } = await supabase.storage
+        .from('profile_pictures')
+        .upload(fileName, decode(base64Data), {
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (error) {
+        console.error('❌ Error en Storage:', error)
+        throw error
+      }
+
+      console.log('✅ Imagen subida exitosamente')
+
+      // Obtener URL pública de la imagen
+      const { data } = supabase.storage
+        .from('profile_pictures')
+        .getPublicUrl(fileName)
+
+      console.log('🔗 URL pública obtenida:', data.publicUrl)
+      return data.publicUrl
+
+    } catch (error) {
+      console.error('❌ Error subiendo imagen:', error)
+      throw new Error(`No se pudo subir la imagen: ${error.message}`)
+    }
+  }
+
+  // Función auxiliar para convertir base64 a Uint8Array
+  const decode = (base64) => {
+    const binaryString = atob(base64)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    return bytes
+  }
+
   const handleSave = async () => {
     if (!name.trim()) {
       Alert.alert('Error', 'Por favor ingresa el nombre')
@@ -89,25 +171,37 @@ const AddPerson = () => {
     }
 
     setIsLoading(true)
+    setUploadProgress(25)
 
     try {
-      const { data, error } = await supabase
+      console.log('🚀 Iniciando proceso de guardado...')
+      
+      // Subir imagen a Storage
+      const storageUrl = await uploadToStorage(photo)
+      setUploadProgress(75)
+      
+      console.log('💾 Guardando perfil en base de datos...')
+      
+      // Guardar perfil SOLO con la URL de Storage
+      const { error } = await supabase
         .from('profiles')
         .insert([
           {
             name: name.trim(),
             age: ageNumber,
-            profile_picture: photo,
+            profile_picture_url: storageUrl, // SOLO la URL de Storage
             created_at: new Date().toISOString()
           }
         ])
-        .select()
 
       if (error) {
-        console.error('Error inserting profile:', error)
-        Alert.alert('Error', 'No se pudo guardar la persona en la base de datos')
+        console.error('❌ Error guardando perfil:', error)
+        Alert.alert('Error', 'No se pudo guardar la persona')
         return
       }
+
+      setUploadProgress(100)
+      console.log('✅ Perfil guardado exitosamente')
 
       Alert.alert(
         'Éxito',
@@ -120,10 +214,11 @@ const AddPerson = () => {
         ]
       )
     } catch (error) {
-      console.error('Error saving profile:', error)
-      Alert.alert('Error', 'Ocurrió un error inesperado al guardar')
+      console.error('❌ Error general:', error)
+      Alert.alert('Error', error.message)
     } finally {
       setIsLoading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -159,6 +254,21 @@ const AddPerson = () => {
             Toca para seleccionar o tomar una foto
           </Text>
         </View>
+
+        {/* Upload Progress Bar */}
+        {uploadProgress > 0 && uploadProgress < 100 && (
+          <View className="mb-4">
+            <View className="bg-gray-200 rounded-full h-2">
+              <View 
+                className="bg-blue-600 h-2 rounded-full" 
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </View>
+            <Text className="text-blue-600 text-sm text-center mt-1">
+              Subiendo imagen... {uploadProgress}%
+            </Text>
+          </View>
+        )}
 
         {/* Form Fields */}
         <View className="space-y-4">

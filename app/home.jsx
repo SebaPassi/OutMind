@@ -94,9 +94,9 @@ const Home = () => {
                 })}
               >
                 <View className="bg-blue-200 rounded-lg mb-2 overflow-hidden">
-                  {profile.profile_picture ? (
+                  {profile.profile_picture_url ? (
                     <Image 
-                      source={{ uri: profile.profile_picture }} 
+                      source={ profile.profile_picture_url } 
                       className="w-full h-24"
                       resizeMode="cover"
                     />
